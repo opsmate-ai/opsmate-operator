@@ -1,32 +1,23 @@
----
+# permissions for end users to view envrionmentbuilds.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: manager-role
+  labels:
+    app.kubernetes.io/name: opsmate-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: envrionmentbuild-viewer-role
 rules:
 - apiGroups:
   - sre.opsmate.io
   resources:
   - envrionmentbuilds
   verbs:
-  - create
-  - delete
   - get
   - list
-  - patch
-  - update
   - watch
-- apiGroups:
-  - sre.opsmate.io
-  resources:
-  - envrionmentbuilds/finalizers
-  verbs:
-  - update
 - apiGroups:
   - sre.opsmate.io
   resources:
   - envrionmentbuilds/status
   verbs:
   - get
-  - patch
-  - update
