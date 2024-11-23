@@ -14,7 +14,14 @@ spec:
     singular: envrionmentbuild
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .status.taskCount
+      name: TaskCount
+      type: integer
+    - jsonPath: .status.threadCount
+      name: ThreadCount
+      type: integer
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: EnvrionmentBuild is the Schema for the envrionmentbuilds API.

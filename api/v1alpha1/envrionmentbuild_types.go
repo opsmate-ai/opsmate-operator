@@ -33,6 +33,8 @@ type EnvrionmentBuildStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 
+// +kubebuilder:printcolumn:name="TaskCount",type=integer,JSONPath=`.status.taskCount`
+// +kubebuilder:printcolumn:name="ThreadCount",type=integer,JSONPath=`.status.threadCount`
 // EnvrionmentBuild is the Schema for the envrionmentbuilds API.
 type EnvrionmentBuild struct {
 	metav1.TypeMeta   `json:",inline"`

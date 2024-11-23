@@ -3,6 +3,7 @@
 # It should be run by config/default
 resources:
 - bases/sre.opsmate.io_envrionmentbuilds.yaml
+- bases/sre.opsmate.io_tasks.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patches:
