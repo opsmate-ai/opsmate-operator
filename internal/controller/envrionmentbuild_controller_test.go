@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	srev1alpha1 "github.com/jingkaihe/opsmate-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -50,7 +51,21 @@ var _ = Describe("EnvrionmentBuild Controller", func() {
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
+		})
 
+		AfterEach(func() {
+			By("Deleting the resource")
+			Expect(
+				k8sClient.DeleteAllOf(
+					ctx,
+					&srev1alpha1.EnvrionmentBuild{},
+					client.InNamespace("default"),
+				),
+			).To(Succeed())
+		})
+
+		It("should successfully reconcile the resource", func() {
+			By("Reconciling the created resource with task count set to 1")
 			// create a task as well
 			task := &srev1alpha1.Task{
 				ObjectMeta: metav1.ObjectMeta{
@@ -64,29 +79,6 @@ var _ = Describe("EnvrionmentBuild Controller", func() {
 				},
 			}
 			Expect(k8sClient.Create(ctx, task)).To(Succeed())
-		})
-
-		AfterEach(func() {
-			// TODO(user): Cleanup logic after each test, like removing the resource instance.
-			resource := &srev1alpha1.EnvrionmentBuild{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      resourceName,
-					Namespace: "default",
-				},
-			}
-			err := k8sClient.Get(ctx, typeNamespacedName, resource)
-			Expect(err).NotTo(HaveOccurred())
-
-			By("Cleanup the specific resource instance EnvrionmentBuild")
-			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
-		})
-
-		It("should successfully reconcile the resource", func() {
-			By("Reconciling the created resource with task count set to 1")
-			// _, err := envBuildReconciler.Reconcile(ctx, reconcile.Request{
-			// 	NamespacedName: typeNamespacedName,
-			// })
-			// Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() int {
 				envBuild := &srev1alpha1.EnvrionmentBuild{
@@ -99,6 +91,20 @@ var _ = Describe("EnvrionmentBuild Controller", func() {
 				Expect(err).NotTo(HaveOccurred())
 				return envBuild.Status.TaskCount
 			}, time.Second*10).Should(Equal(1))
+
+			By("Deleting the task the task count should be 0")
+			Expect(k8sClient.Delete(ctx, task)).To(Succeed())
+			Eventually(func() int {
+				envBuild := &srev1alpha1.EnvrionmentBuild{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      resourceName,
+						Namespace: "default",
+					},
+				}
+				err := k8sClient.Get(ctx, typeNamespacedName, envBuild)
+				Expect(err).NotTo(HaveOccurred())
+				return envBuild.Status.TaskCount
+			}, time.Second*10).Should(Equal(0))
 		})
 	})
 })
