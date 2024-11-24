@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -38,6 +39,10 @@ type TaskStatus struct {
 	// +kubebuilder:validation:Enum=PENDING;SCHEDULED;RUNNING;TERMINATING;ERROR;NOT_FOUND
 	// +kubebuilder:default:=PENDING
 	State string `json:"state,omitempty"`
+
+	// Pod is the reference to the pod that is running the task
+	// +optional
+	Pod *corev1.ObjectReference `json:"pod,omitempty"`
 
 	// Reason for the error
 	// +optional

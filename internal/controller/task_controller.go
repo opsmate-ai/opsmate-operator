@@ -17,6 +17,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/reference"
 )
 
 // TaskReconciler reconciles a Task object
@@ -37,7 +38,7 @@ func NewTaskReconciler(mgr ctrl.Manager) *TaskReconciler {
 // +kubebuilder:rbac:groups=sre.opsmate.io,resources=tasks,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=sre.opsmate.io,resources=tasks/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=sre.opsmate.io,resources=tasks/finalizers,verbs=update
-
+// +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;create;update;patch;delete
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 //
@@ -96,6 +97,7 @@ func (r *TaskReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	switch task.Status.State {
 	case srev1alpha1.StatePending:
+		return r.statePending(ctx, &task)
 	case srev1alpha1.StateScheduled:
 	case srev1alpha1.StateRunning:
 	case srev1alpha1.StateTerminating:
@@ -106,6 +108,62 @@ func (r *TaskReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{}, nil
 	}
 	return ctrl.Result{}, nil
+}
+
+func (r *TaskReconciler) statePending(ctx context.Context, task *srev1alpha1.Task) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+
+	// get the environment build
+	var envBuild srev1alpha1.EnvrionmentBuild
+	if err := r.Get(ctx, client.ObjectKey{
+		Name:      task.Spec.EnvironmentBuildName,
+		Namespace: task.Namespace,
+	}, &envBuild); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	// construct the pod
+	podMeta := envBuild.Spec.Template.ObjectMeta
+	podMeta.Name = task.Name
+	podMeta.Namespace = task.Namespace
+	podMeta.Labels = map[string]string{
+		"userID":       task.Spec.UserID,
+		"envBuildName": task.Spec.EnvironmentBuildName,
+	}
+
+	pod := &corev1.Pod{
+		ObjectMeta: podMeta,
+		Spec:       envBuild.Spec.Template.Spec,
+	}
+
+	if err := ctrl.SetControllerReference(task, pod, r.Scheme); err != nil {
+		return r.markTaskAsError(ctx, task, err)
+	}
+
+	if err := r.Create(ctx, pod); err != nil {
+		return r.markTaskAsError(ctx, task, err)
+	}
+
+	podRef, err := reference.GetReference(r.Scheme, pod)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	task.Status.Pod = podRef
+	task.Status.State = srev1alpha1.StateScheduled
+
+	logger.Info("task scheduled", "pod", podRef)
+
+	return r.updateTaskStatus(ctx, task)
+}
+
+func (r *TaskReconciler) markTaskAsError(ctx context.Context, task *srev1alpha1.Task, reason error) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+	task.Status.State = srev1alpha1.StateError
+	task.Status.Reason = reason.Error()
+
+	logger.Error(reason, "task error", "state", task.Status.State)
+	return r.updateTaskStatus(ctx, task)
 }
 
 func (r *TaskReconciler) updateTaskStatus(ctx context.Context, task *srev1alpha1.Task) (ctrl.Result, error) {

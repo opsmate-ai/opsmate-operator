@@ -8,7 +8,6 @@ rules:
   - sre.opsmate.io
   resources:
   - envrionmentbuilds
-  - tasks
   verbs:
   - create
   - delete
@@ -21,14 +20,12 @@ rules:
   - sre.opsmate.io
   resources:
   - envrionmentbuilds/finalizers
-  - tasks/finalizers
   verbs:
   - update
 - apiGroups:
   - sre.opsmate.io
   resources:
   - envrionmentbuilds/status
-  - tasks/status
   verbs:
   - get
   - patch
