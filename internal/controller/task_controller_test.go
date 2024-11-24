@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -16,7 +15,7 @@ import (
 
 var _ = Describe("Task Controller", func() {
 	Context("When reconciling a resource", func() {
-		const resourceName = "test-resource"
+		const resourceName = "test-task"
 
 		ctx := context.Background()
 
@@ -61,17 +60,13 @@ var _ = Describe("Task Controller", func() {
 		})
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
-			controllerReconciler := &TaskReconciler{
-				Client: k8sClient,
-				Scheme: k8sClient.Scheme(),
-			}
 
-			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
-				NamespacedName: typeNamespacedName,
-			})
-			Expect(err).NotTo(HaveOccurred())
-			// TODO(user): Add more specific assertions depending on your controller's reconciliation logic.
-			// Example: If you expect a certain status condition after reconciliation, verify it here.
+			// by default it's pending
+			Eventually(func() string {
+				err := k8sClient.Get(ctx, typeNamespacedName, task)
+				Expect(err).NotTo(HaveOccurred())
+				return task.Status.State
+			}).Should(Equal(srev1alpha1.StatePending))
 		})
 	})
 })

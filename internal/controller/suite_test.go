@@ -89,10 +89,11 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sMgr)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = (&TaskReconciler{
-		Client: k8sMgr.GetClient(),
-		Scheme: k8sMgr.GetScheme(),
-	}).SetupWithManager(k8sMgr)
+	// err = (&TaskReconciler{
+	// 	Client: k8sMgr.GetClient(),
+	// 	Scheme: k8sMgr.GetScheme(),
+	// }).SetupWithManager(k8sMgr)
+	err = NewTaskReconciler(k8sMgr).SetupWithManager(k8sMgr)
 	Expect(err).NotTo(HaveOccurred())
 
 	go func() {

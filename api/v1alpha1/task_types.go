@@ -36,11 +36,16 @@ type TaskStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// +kubebuilder:validation:Enum=PENDING;SCHEDULED;RUNNING;TERMINATING;ERROR;NOT_FOUND
+	// +kubebuilder:default:=PENDING
 	State string `json:"state,omitempty"`
 
 	// Reason for the error
 	// +optional
 	Reason string `json:"reason,omitempty"`
+
+	// The conditions of the task
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
 	// Internal IP of the Task Pod
 	// +optional
@@ -86,6 +91,9 @@ const (
 	StateTerminating = "TERMINATING" // Pod is terminated
 	StateError       = "ERROR"       // Task in Error State
 	StateNotFound    = "NOT_FOUND"   // Task not found
+
+	ConditionTaskPodRunning   = "TaskPodRunning"
+	ConditionTaskPodScheduled = "TaskPodScheduled"
 )
 
 func init() {
