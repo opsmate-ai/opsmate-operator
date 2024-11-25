@@ -22,8 +22,13 @@ type Service struct {
 func NewService(ctx context.Context) (*Service, error) {
 	scheme := runtime.NewScheme()
 
-	goscheme.AddToScheme(scheme)
-	srev1alpha1.AddToScheme(scheme)
+	if err := goscheme.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+
+	if err := srev1alpha1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
 
 	config := ctrl.GetConfigOrDie()
 
