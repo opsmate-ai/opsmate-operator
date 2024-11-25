@@ -40,6 +40,8 @@ var (
 	graceRequeResult   = ctrl.Result{RequeueAfter: 100 * time.Millisecond}
 	ErrContainerExit   = errors.New("container exited")
 	podCreationTimeout = 10 * time.Second
+	taskTimeout        = 10 * time.Minute
+	syncPeriod         = 10 * time.Minute
 )
 
 // +kubebuilder:rbac:groups=sre.opsmate.io,resources=tasks,verbs=get;list;watch;create;update;patch;delete
@@ -50,9 +52,6 @@ var (
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.19.1/pkg/reconcile
 func (r *TaskReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
@@ -110,14 +109,17 @@ func (r *TaskReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	case srev1alpha1.StateScheduled:
 		return r.stateScheduled(ctx, &task)
 	case srev1alpha1.StateRunning:
+		return r.stateRunning(ctx, &task)
 	case srev1alpha1.StateTerminating:
+		return r.stateTerminating(ctx, &task)
 	case srev1alpha1.StateNotFound:
+		return r.stateNotFound(ctx, &task)
 	case srev1alpha1.StateError:
+		return r.stateError(ctx, &task)
 	default:
 		logger.Info("unknown task state", "state", task.Status.State)
 		return ctrl.Result{}, nil
 	}
-	return ctrl.Result{}, nil
 }
 
 func (r *TaskReconciler) statePending(ctx context.Context, task *srev1alpha1.Task) (ctrl.Result, error) {
@@ -145,6 +147,9 @@ func (r *TaskReconciler) statePending(ctx context.Context, task *srev1alpha1.Tas
 		ObjectMeta: podMeta,
 		Spec:       envBuild.Spec.Template.Spec,
 	}
+
+	// prevent pod from restarting
+	pod.Spec.RestartPolicy = corev1.RestartPolicyNever
 
 	if err := ctrl.SetControllerReference(task, pod, r.Scheme); err != nil {
 		return r.markTaskAsError(ctx, task, err)
@@ -217,6 +222,84 @@ func (r *TaskReconciler) stateScheduled(ctx context.Context, task *srev1alpha1.T
 		logger.Info("unknown pod phase", "phase", pod.Status.Phase)
 		return ctrl.Result{}, nil
 	}
+}
+
+func (r *TaskReconciler) stateRunning(ctx context.Context, task *srev1alpha1.Task) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+
+	var updateState = func(task *srev1alpha1.Task, newState string) {
+		if newState != task.Status.State {
+			task.Status.State = newState
+			r.updateTaskStatus(ctx, task)
+		}
+	}
+
+	var (
+		newState = task.Status.State
+		pod      = corev1.Pod{}
+	)
+
+	if err := r.Get(ctx, types.NamespacedName{
+		Name:      task.Name,
+		Namespace: task.Namespace,
+	}, &pod); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return ctrl.Result{}, err
+		}
+
+		// pod not found
+		newState = srev1alpha1.StateTerminating
+		logger.Info("task is terminating", "state", newState)
+		updateState(task, newState)
+		return ctrl.Result{}, nil
+	}
+
+	if pod.Status.Phase == corev1.PodFailed || pod.Status.Phase == corev1.PodSucceeded {
+		newState = srev1alpha1.StateTerminating
+		logger.Info("task is terminating", "state", newState, "reason", pod.Status.Reason)
+		updateState(task, newState)
+		return ctrl.Result{}, nil
+	}
+
+	if time.Now().After(pod.CreationTimestamp.Add(taskTimeout)) {
+		newState = srev1alpha1.StateTerminating
+		logger.Info("task is terminating",
+			"state", newState,
+			"reason", "task timeout",
+			"timeout", taskTimeout,
+			"lifetime", time.Since(pod.CreationTimestamp.Time).String(),
+		)
+
+		r.Recorder.Event(task, corev1.EventTypeWarning, "TaskTimeout", fmt.Sprintf("Task %s timed out after %s", task.Name, taskTimeout))
+		updateState(task, newState)
+		return ctrl.Result{}, nil
+	}
+
+	// nothing happened but we still need to requeue
+	// for the following reasons:
+	// * just in case the controller-runtime somehow missed the task update events
+	// * continuously check if the task should be evicted due to timeout.
+	return ctrl.Result{RequeueAfter: syncPeriod}, nil
+}
+
+func (r *TaskReconciler) stateTerminating(ctx context.Context, task *srev1alpha1.Task) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+
+	if err := r.Delete(ctx, task); err != nil {
+		logger.Error(err, "unable to delete task")
+		return ctrl.Result{}, err
+	}
+
+	return ctrl.Result{RequeueAfter: 1 * time.Second}, nil
+}
+
+func (r *TaskReconciler) stateNotFound(_ context.Context, _ *srev1alpha1.Task) (ctrl.Result, error) {
+	return ctrl.Result{}, nil
+}
+
+func (r *TaskReconciler) stateError(ctx context.Context, task *srev1alpha1.Task) (ctrl.Result, error) {
+	task.Status.State = srev1alpha1.StateError
+	return r.updateTaskStatus(ctx, task)
 }
 
 func (r *TaskReconciler) markTaskAsError(ctx context.Context, task *srev1alpha1.Task, reason error) (ctrl.Result, error) {
