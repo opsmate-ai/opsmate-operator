@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -34,6 +35,12 @@ func NewTaskReconciler(mgr ctrl.Manager) *TaskReconciler {
 		Recorder: mgr.GetEventRecorderFor("task-controller"),
 	}
 }
+
+var (
+	graceRequeResult   = ctrl.Result{RequeueAfter: 100 * time.Millisecond}
+	ErrContainerExit   = errors.New("container exited")
+	podCreationTimeout = 10 * time.Second
+)
 
 // +kubebuilder:rbac:groups=sre.opsmate.io,resources=tasks,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=sre.opsmate.io,resources=tasks/status,verbs=get;update;patch
@@ -101,6 +108,7 @@ func (r *TaskReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	case srev1alpha1.StatePending:
 		return r.statePending(ctx, &task)
 	case srev1alpha1.StateScheduled:
+		return r.stateScheduled(ctx, &task)
 	case srev1alpha1.StateRunning:
 	case srev1alpha1.StateTerminating:
 	case srev1alpha1.StateNotFound:
@@ -159,12 +167,85 @@ func (r *TaskReconciler) statePending(ctx context.Context, task *srev1alpha1.Tas
 	return r.updateTaskStatus(ctx, task)
 }
 
+func (r *TaskReconciler) stateScheduled(ctx context.Context, task *srev1alpha1.Task) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+
+	var pod corev1.Pod
+	if err := r.Get(ctx, types.NamespacedName{
+		Name:      task.Name,
+		Namespace: task.Namespace,
+	}, &pod); err != nil {
+		if apierrors.IsNotFound(err) {
+			if time.Now().After(task.CreationTimestamp.Add(podCreationTimeout)) {
+				return r.markTaskAsError(ctx, task, errors.New("pod creation timeout"))
+			}
+			return graceRequeResult, nil
+		}
+		return ctrl.Result{}, err
+	}
+
+	switch pod.Status.Phase {
+	case corev1.PodPending:
+		meta.SetStatusCondition(&task.Status.Conditions, metav1.Condition{
+			Type:    srev1alpha1.ConditionTaskPodScheduled,
+			Status:  metav1.ConditionTrue,
+			Reason:  "PodScheduled",
+			Message: "Task pod is scheduled",
+		})
+		// DO NOT use r.updateTaskStatus here to avoid event spam
+		if err := r.Status().Update(ctx, task); err != nil {
+			return ctrl.Result{}, err
+		}
+		return graceRequeResult, nil
+	case corev1.PodRunning:
+		if anyContainerErrors(ctx, &pod) {
+			return r.markTaskAsError(ctx, task, errors.New("pod container error"))
+		}
+		if !podReadyAndRunning(&pod) {
+			return graceRequeResult, nil
+		}
+		return r.markTaskAsRunning(ctx, task, &pod)
+	case corev1.PodSucceeded:
+		return r.markTaskAsError(ctx, task, errors.New("pod completed prematurely"))
+	case corev1.PodFailed, corev1.PodUnknown:
+		return r.markTaskAsError(ctx, task, errors.New("pod failed"))
+	default:
+		logger.Info("unknown pod phase", "phase", pod.Status.Phase)
+		return ctrl.Result{}, nil
+	}
+}
+
 func (r *TaskReconciler) markTaskAsError(ctx context.Context, task *srev1alpha1.Task, reason error) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 	task.Status.State = srev1alpha1.StateError
 	task.Status.Reason = reason.Error()
 
 	logger.Error(reason, "task error", "state", task.Status.State)
+	return r.updateTaskStatus(ctx, task)
+}
+
+func (r *TaskReconciler) markTaskAsRunning(ctx context.Context, task *srev1alpha1.Task, pod *corev1.Pod) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+
+	task.Status.State = srev1alpha1.StateRunning
+	meta.SetStatusCondition(&task.Status.Conditions, metav1.Condition{
+		Type:    srev1alpha1.ConditionTaskPodRunning,
+		Status:  metav1.ConditionTrue,
+		Reason:  "PodRunning",
+		Message: "Task pod is running",
+	})
+
+	task.Status.AllocatedAt = &metav1.Time{Time: time.Now()}
+	task.Status.InternalIP = pod.Status.PodIP
+
+	elapsed := time.Since(task.CreationTimestamp.Time)
+
+	logger.Info("task is running",
+		"internalIP", pod.Status.PodIP,
+		"podName", pod.Name,
+		"state", task.Status.State,
+		"elapsed", elapsed.Seconds(),
+	)
 	return r.updateTaskStatus(ctx, task)
 }
 
@@ -206,4 +287,31 @@ func (r *TaskReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&srev1alpha1.Task{}).
 		Named("task").
 		Complete(r)
+}
+
+func podReadyAndRunning(pod *corev1.Pod) bool {
+	if pod.Status.Phase != corev1.PodRunning {
+		return false
+	}
+
+	for _, condition := range pod.Status.Conditions {
+		if condition.Type == corev1.ContainersReady && condition.Status == corev1.ConditionTrue {
+			return true
+		}
+	}
+	return false
+}
+
+func anyContainerErrors(ctx context.Context, pod *corev1.Pod) bool {
+	for _, containerStatus := range pod.Status.ContainerStatuses {
+		if containerStatus.State.Terminated != nil {
+			log.FromContext(ctx).Error(ErrContainerExit, "container error",
+				"container", containerStatus.Name,
+				"reason", containerStatus.State.Terminated.Reason,
+				"exitCode", containerStatus.State.Terminated.ExitCode,
+			)
+			return true
+		}
+	}
+	return false
 }

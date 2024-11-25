@@ -56,6 +56,10 @@ type TaskStatus struct {
 	// +optional
 	InternalIP string `json:"internalIP,omitempty"`
 
+	// The time when the task pod is up and running
+	// +optional
+	AllocatedAt *metav1.Time `json:"allocatedAt,omitempty"`
+
 	// Output of the task
 	// +optional
 	Output string `json:"output,omitempty"`
