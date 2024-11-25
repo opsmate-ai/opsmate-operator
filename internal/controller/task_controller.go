@@ -230,13 +230,12 @@ func (r *TaskReconciler) stateRunning(ctx context.Context, task *srev1alpha1.Tas
 	var updateState = func(task *srev1alpha1.Task, newState string) {
 		if newState != task.Status.State {
 			task.Status.State = newState
-			r.updateTaskStatus(ctx, task)
+			_, _ = r.updateTaskStatus(ctx, task)
 		}
 	}
 
 	var (
-		newState = task.Status.State
-		pod      = corev1.Pod{}
+		pod = corev1.Pod{}
 	)
 
 	if err := r.Get(ctx, types.NamespacedName{
@@ -248,30 +247,27 @@ func (r *TaskReconciler) stateRunning(ctx context.Context, task *srev1alpha1.Tas
 		}
 
 		// pod not found
-		newState = srev1alpha1.StateTerminating
-		logger.Info("task is terminating", "state", newState)
-		updateState(task, newState)
+		logger.Info("task is terminating", "state", srev1alpha1.StateTerminating)
+		updateState(task, srev1alpha1.StateTerminating)
 		return ctrl.Result{}, nil
 	}
 
 	if pod.Status.Phase == corev1.PodFailed || pod.Status.Phase == corev1.PodSucceeded {
-		newState = srev1alpha1.StateTerminating
-		logger.Info("task is terminating", "state", newState, "reason", pod.Status.Reason)
-		updateState(task, newState)
+		logger.Info("task is terminating", "state", srev1alpha1.StateTerminating, "reason", pod.Status.Reason)
+		updateState(task, srev1alpha1.StateTerminating)
 		return ctrl.Result{}, nil
 	}
 
 	if time.Now().After(pod.CreationTimestamp.Add(taskTimeout)) {
-		newState = srev1alpha1.StateTerminating
 		logger.Info("task is terminating",
-			"state", newState,
+			"state", srev1alpha1.StateTerminating,
 			"reason", "task timeout",
 			"timeout", taskTimeout,
 			"lifetime", time.Since(pod.CreationTimestamp.Time).String(),
 		)
 
 		r.Recorder.Event(task, corev1.EventTypeWarning, "TaskTimeout", fmt.Sprintf("Task %s timed out after %s", task.Name, taskTimeout))
-		updateState(task, newState)
+		updateState(task, srev1alpha1.StateTerminating)
 		return ctrl.Result{}, nil
 	}
 
