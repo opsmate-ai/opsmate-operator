@@ -63,3 +63,21 @@ func NewService(ctx context.Context) (*Service, error) {
 func (s *Service) Healthz(g *gin.Context) {
 	g.JSON(http.StatusOK, "ok")
 }
+
+// @Summary Get EnvironmentBuilds
+// @Description get environment builds
+// @Accept  json
+// @Produce  json
+// @Success 200 {array} srev1alpha1.EnvrionmentBuild
+// @Router /environmentbuilds [get]
+func (s *Service) GetEnvironmentBuilds(g *gin.Context) {
+	ctx := g.Request.Context()
+	reglog := logger.G(ctx)
+	envBuilds := &srev1alpha1.EnvrionmentBuildList{}
+	if err := s.client.List(ctx, envBuilds); err != nil {
+		reglog.WithError(err).Error("failed to list environment builds")
+		g.JSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+	g.JSON(http.StatusOK, envBuilds.Items)
+}

@@ -29,4 +29,5 @@ func register(router *gin.Engine, svc *Service) {
 	v1alpha1 := router.Group("/api/v1alpha1")
 
 	v1alpha1.GET("/healthz", svc.Healthz)
+	v1alpha1.GET("/environmentbuilds", svc.GetEnvironmentBuilds)
 }
