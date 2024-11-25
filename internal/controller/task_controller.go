@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -14,6 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	srev1alpha1 "github.com/jingkaihe/opsmate-operator/api/v1alpha1"
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -37,8 +37,13 @@ func NewTaskReconciler(mgr ctrl.Manager) *TaskReconciler {
 }
 
 var (
-	graceRequeResult   = ctrl.Result{RequeueAfter: 100 * time.Millisecond}
-	ErrContainerExit   = errors.New("container exited")
+	graceRequeResult = ctrl.Result{RequeueAfter: 100 * time.Millisecond}
+	ErrContainerExit = errors.New("container exited")
+	apiGVStr         = srev1alpha1.GroupVersion.String()
+)
+
+const (
+	ownerKey           = ".metadata.controller"
 	podCreationTimeout = 10 * time.Second
 	taskTimeout        = 10 * time.Minute
 	syncPeriod         = 10 * time.Minute
@@ -160,7 +165,7 @@ func (r *TaskReconciler) statePending(ctx context.Context, task *srev1alpha1.Tas
 			logger.Info("pod already exists likely caused by quick subsequent reconcile")
 			return graceRequeResult, nil
 		}
-		return r.markTaskAsError(ctx, task, err)
+		return r.markTaskAsError(ctx, task, errors.Wrap(err, "failed to create pod"))
 	}
 
 	podRef, err := reference.GetReference(r.Scheme, pod)
@@ -252,7 +257,7 @@ func (r *TaskReconciler) stateRunning(ctx context.Context, task *srev1alpha1.Tas
 		return ctrl.Result{}, nil
 	}
 
-	if pod.Status.Phase == corev1.PodFailed || pod.Status.Phase == corev1.PodSucceeded {
+	if pod.Status.Phase == corev1.PodFailed || pod.Status.Phase == corev1.PodSucceeded || pod.Status.Phase == srev1alpha1.StateTerminating {
 		logger.Info("task is terminating", "state", srev1alpha1.StateTerminating, "reason", pod.Status.Reason)
 		updateState(task, srev1alpha1.StateTerminating)
 		return ctrl.Result{}, nil
@@ -266,7 +271,7 @@ func (r *TaskReconciler) stateRunning(ctx context.Context, task *srev1alpha1.Tas
 			"lifetime", time.Since(pod.CreationTimestamp.Time).String(),
 		)
 
-		r.Recorder.Event(task, corev1.EventTypeWarning, "TaskTimeout", fmt.Sprintf("Task %s timed out after %s", task.Name, taskTimeout))
+		r.Recorder.Event(task, corev1.EventTypeWarning, "TaskTimeout", fmt.Sprintf("Timed out after %s", taskTimeout))
 		updateState(task, srev1alpha1.StateTerminating)
 		return ctrl.Result{}, nil
 	}
@@ -294,7 +299,7 @@ func (r *TaskReconciler) stateNotFound(_ context.Context, _ *srev1alpha1.Task) (
 }
 
 func (r *TaskReconciler) stateError(ctx context.Context, task *srev1alpha1.Task) (ctrl.Result, error) {
-	task.Status.State = srev1alpha1.StateError
+	task.Status.State = srev1alpha1.StateTerminating
 	return r.updateTaskStatus(ctx, task)
 }
 
@@ -349,8 +354,7 @@ func (r *TaskReconciler) updateTaskStatus(ctx context.Context, task *srev1alpha1
 	r.Recorder.Event(task,
 		corev1.EventTypeNormal,
 		"TaskStatusUpdated",
-		fmt.Sprintf("Task %s status updated to %s, elapsed: %f",
-			task.Name,
+		fmt.Sprintf("Task status updated to %s, elapsed: %f",
 			task.Status.State,
 			time.Since(task.CreationTimestamp.Time).Seconds(),
 		),
@@ -366,9 +370,25 @@ func (r *TaskReconciler) updateTaskStatus(ctx context.Context, task *srev1alpha1
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *TaskReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &corev1.Pod{}, "spec.ownerReferences", func(o client.Object) []string {
+		pod := o.(*corev1.Pod)
+		owner := metav1.GetControllerOf(pod)
+
+		if owner == nil {
+			return nil
+		}
+		if owner.Kind != "Task" || owner.APIVersion != apiGVStr {
+			return nil
+		}
+		return []string{owner.Name}
+	}); err != nil {
+		return err
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&srev1alpha1.Task{}).
 		Named("task").
+		Owns(&corev1.Pod{}).
 		Complete(r)
 }
 
