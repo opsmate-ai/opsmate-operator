@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -76,7 +77,7 @@ var _ = Describe("Task Controller", func() {
 				err := k8sClient.Get(ctx, typeNamespacedName, task)
 				Expect(err).NotTo(HaveOccurred())
 				return task.Status.State
-			}).Should(Equal(srev1alpha1.StateScheduled))
+			}).WithTimeout(5 * time.Second).Should(Equal(srev1alpha1.StateScheduled))
 		})
 	})
 })

@@ -60,9 +60,20 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	go vet ./...
 
+.PHONY: ensure-kind-cluster
+ensure-kind-cluster:
+	@if [ "$(shell kind get clusters)" != "opsmate-cluster" ]; then \
+		echo "No Kind cluster is running. Please start a Kind cluster before running the tests."; \
+		exit 1; \
+	else \
+		echo "Kind cluster is running"; \
+	fi
+
 .PHONY: test
-test: manifests generate fmt vet envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test $$(go list ./... | grep -v /e2e) -coverprofile cover.out
+test: ensure-kind-cluster manifests generate install fmt vet envtest ## Run tests.
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" \
+	USE_EXISTING_CLUSTER=true \
+	go test $$(go list ./... | grep -v /e2e) -coverprofile cover.out
 
 # TODO(user): To use a different vendor for e2e tests, modify the setup under 'tests/e2e'.
 # The default setup assumes Kind is pre-installed and builds/loads the Manager Docker image locally.
