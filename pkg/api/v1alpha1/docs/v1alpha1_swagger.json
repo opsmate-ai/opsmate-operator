@@ -1,0 +1,35 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "This is Opsmate Operator API.",
+        "title": "Opsmate Operator API",
+        "contact": {
+            "name": "Opsmate engineering team",
+            "email": "jingkai@hey.com"
+        },
+        "version": "0.1.0"
+    },
+    "basePath": "/api/v1alpha1",
+    "paths": {
+        "/healthz": {
+            "get": {
+                "description": "get health check endpoint",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get health status of the API server",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

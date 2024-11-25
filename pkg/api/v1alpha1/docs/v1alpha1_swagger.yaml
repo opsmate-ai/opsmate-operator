@@ -1,0 +1,23 @@
+basePath: /api/v1alpha1
+info:
+  contact:
+    email: jingkai@hey.com
+    name: Opsmate engineering team
+  description: This is Opsmate Operator API.
+  title: Opsmate Operator API
+  version: 0.1.0
+paths:
+  /healthz:
+    get:
+      consumes:
+      - application/json
+      description: get health check endpoint
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Get health status of the API server
+swagger: "2.0"

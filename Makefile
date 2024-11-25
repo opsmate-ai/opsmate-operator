@@ -3,6 +3,7 @@ IMG ?= controller:latest
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.31.0
 KIND_VERSION ?= v0.23.0
+SWAG ?= $(LOCALBIN)/swag
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -62,7 +63,7 @@ vet: ## Run go vet against code.
 
 .PHONY: ensure-kind-cluster
 ensure-kind-cluster:
-	@if [ "$(shell kind get clusters)" != "opsmate-cluster" ]; then \
+	@if ! kind get clusters | grep -q 'opsmate-cluster'; then \
 		echo "No Kind cluster is running. Please start a Kind cluster before running the tests."; \
 		exit 1; \
 	else \
@@ -216,6 +217,14 @@ kind-cluster: kind ## Create a kind cluster.
 kind-destroy: kind ## Destroy a kind cluster.
 	$(KIND) delete cluster --name opsmate-cluster
 
+
+.PHONY: swag-gen
+swag-gen: swag ## generate API docs
+	cd pkg/api/v1alpha1 && $(SWAG) i --parseDependency -g main.go --dir . --instanceName v1alpha1
+
+.PHONY:
+swag: ## Download swag locally if necessary.
+	test -s $(LOCALBIN)/swag || GOBIN=$(LOCALBIN) go install github.com/swaggo/swag/cmd/swag@latest
 
 .PHONY: golangci-lint
 golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
