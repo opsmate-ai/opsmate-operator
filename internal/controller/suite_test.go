@@ -12,12 +12,14 @@ import (
 
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	srev1alpha1 "github.com/jingkaihe/opsmate-operator/api/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -64,12 +66,41 @@ var _ = BeforeSuite(func() {
 	err = srev1alpha1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
+	err = corev1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
 	// +kubebuilder:scaffold:scheme
 
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 
+	k8sMgr, err := ctrl.NewManager(cfg, ctrl.Options{
+		Scheme: scheme.Scheme,
+	})
+	Expect(err).NotTo(HaveOccurred())
+
+	// https://github.com/kubernetes-sigs/kubebuilder/issues/2128
+	// if you ever think about using k8sClient here, you will get into trouble
+	// 2 hours of my life wasted :/
+	err = (&EnvrionmentBuildReconciler{
+		Client: k8sMgr.GetClient(),
+		Scheme: k8sMgr.GetScheme(),
+	}).SetupWithManager(k8sMgr)
+	Expect(err).NotTo(HaveOccurred())
+
+	// err = (&TaskReconciler{
+	// 	Client: k8sMgr.GetClient(),
+	// 	Scheme: k8sMgr.GetScheme(),
+	// }).SetupWithManager(k8sMgr)
+	err = NewTaskReconciler(k8sMgr).SetupWithManager(k8sMgr)
+	Expect(err).NotTo(HaveOccurred())
+
+	go func() {
+		defer GinkgoRecover()
+		err = k8sMgr.Start(ctx)
+		Expect(err).NotTo(HaveOccurred())
+	}()
 })
 
 var _ = AfterSuite(func() {

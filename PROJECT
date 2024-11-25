@@ -17,4 +17,13 @@ resources:
   kind: EnvrionmentBuild
   path: github.com/jingkaihe/opsmate-operator/api/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: opsmate.io
+  group: sre
+  kind: Task
+  path: github.com/jingkaihe/opsmate-operator/api/v1alpha1
+  version: v1alpha1
 version: "3"

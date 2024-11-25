@@ -2,6 +2,8 @@ name: Tests
 
 on:
   push:
+    branches:
+      - main
   pull_request:
 
 jobs:
@@ -20,4 +22,5 @@ jobs:
       - name: Running Tests
         run: |
           go mod tidy
+          make kind-cluster
           make test

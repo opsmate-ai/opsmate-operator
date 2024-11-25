@@ -5,9 +5,29 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - sre.opsmate.io
   resources:
   - envrionmentbuilds
+  - tasks
   verbs:
   - create
   - delete
@@ -20,12 +40,14 @@ rules:
   - sre.opsmate.io
   resources:
   - envrionmentbuilds/finalizers
+  - tasks/finalizers
   verbs:
   - update
 - apiGroups:
   - sre.opsmate.io
   resources:
   - envrionmentbuilds/status
+  - tasks/status
   verbs:
   - get
   - patch
