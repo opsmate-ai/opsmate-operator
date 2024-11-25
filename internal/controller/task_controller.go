@@ -151,6 +151,10 @@ func (r *TaskReconciler) statePending(ctx context.Context, task *srev1alpha1.Tas
 	}
 
 	if err := r.Create(ctx, pod); err != nil {
+		if apierrors.IsAlreadyExists(err) {
+			logger.Info("pod already exists likely caused by quick subsequent reconcile")
+			return graceRequeResult, nil
+		}
 		return r.markTaskAsError(ctx, task, err)
 	}
 
