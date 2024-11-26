@@ -4,14 +4,14 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.16.4
-  name: envrionmentbuilds.sre.opsmate.io
+  name: environmentbuilds.sre.opsmate.io
 spec:
   group: sre.opsmate.io
   names:
-    kind: EnvrionmentBuild
-    listKind: EnvrionmentBuildList
-    plural: envrionmentbuilds
-    singular: envrionmentbuild
+    kind: EnvironmentBuild
+    listKind: EnvironmentBuildList
+    plural: environmentbuilds
+    singular: environmentbuild
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -24,7 +24,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: EnvrionmentBuild is the Schema for the envrionmentbuilds API.
+        description: EnvironmentBuild is the Schema for the environmentbuilds API.
         properties:
           apiVersion:
             description: |-
@@ -44,7 +44,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: EnvrionmentBuildSpec defines the desired state of EnvrionmentBuild.
+            description: EnvironmentBuildSpec defines the desired state of EnvironmentBuild.
             properties:
               template:
                 description: Template is the execution environment definition in form
@@ -7947,7 +7947,7 @@ spec:
             - template
             type: object
           status:
-            description: EnvrionmentBuildStatus defines the observed state of EnvrionmentBuild.
+            description: EnvironmentBuildStatus defines the observed state of EnvironmentBuild.
             properties:
               taskCount:
                 description: Number of tasks uses this environmentBuild

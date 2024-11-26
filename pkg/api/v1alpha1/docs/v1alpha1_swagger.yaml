@@ -4808,7 +4808,7 @@ definitions:
           +optional
         type: string
     type: object
-  v1alpha1.EnvrionmentBuild:
+  v1alpha1.EnvironmentBuild:
     properties:
       apiVersion:
         description: |-
@@ -4830,11 +4830,11 @@ definitions:
       metadata:
         $ref: '#/definitions/v1.ObjectMeta'
       spec:
-        $ref: '#/definitions/v1alpha1.EnvrionmentBuildSpec'
+        $ref: '#/definitions/v1alpha1.EnvironmentBuildSpec'
       status:
-        $ref: '#/definitions/v1alpha1.EnvrionmentBuildStatus'
+        $ref: '#/definitions/v1alpha1.EnvironmentBuildStatus'
     type: object
-  v1alpha1.EnvrionmentBuildSpec:
+  v1alpha1.EnvironmentBuildSpec:
     properties:
       template:
         allOf:
@@ -4843,7 +4843,7 @@ definitions:
           +kubebuilder:validation:Required
           Template is the execution environment definition in form of a pod template
     type: object
-  v1alpha1.EnvrionmentBuildStatus:
+  v1alpha1.EnvironmentBuildStatus:
     properties:
       taskCount:
         description: Number of tasks uses this environmentBuild
@@ -4872,7 +4872,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/v1alpha1.EnvrionmentBuild'
+              $ref: '#/definitions/v1alpha1.EnvironmentBuild'
             type: array
         "404":
           description: Not Found
@@ -4886,14 +4886,14 @@ paths:
         name: environmentBuild
         required: true
         schema:
-          $ref: '#/definitions/v1alpha1.EnvrionmentBuild'
+          $ref: '#/definitions/v1alpha1.EnvironmentBuild'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/v1alpha1.EnvrionmentBuild'
+            $ref: '#/definitions/v1alpha1.EnvironmentBuild'
         "400":
           description: Bad Request
           schema: {}
@@ -4909,7 +4909,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1alpha1.EnvrionmentBuild'
+            $ref: '#/definitions/v1alpha1.EnvironmentBuild'
         "404":
           description: Not Found
           schema: {}
@@ -4924,7 +4924,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1alpha1.EnvrionmentBuild'
+            $ref: '#/definitions/v1alpha1.EnvironmentBuild'
         "400":
           description: Bad Request
           schema: {}

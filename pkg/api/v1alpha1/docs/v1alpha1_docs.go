@@ -34,7 +34,7 @@ const docTemplatev1alpha1 = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/v1alpha1.EnvrionmentBuild"
+                                "$ref": "#/definitions/v1alpha1.EnvironmentBuild"
                             }
                         }
                     },
@@ -57,7 +57,7 @@ const docTemplatev1alpha1 = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1alpha1.EnvrionmentBuild"
+                            "$ref": "#/definitions/v1alpha1.EnvironmentBuild"
                         }
                     }
                 ],
@@ -65,7 +65,7 @@ const docTemplatev1alpha1 = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/v1alpha1.EnvrionmentBuild"
+                            "$ref": "#/definitions/v1alpha1.EnvironmentBuild"
                         }
                     },
                     "400": {
@@ -89,7 +89,7 @@ const docTemplatev1alpha1 = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1alpha1.EnvrionmentBuild"
+                            "$ref": "#/definitions/v1alpha1.EnvironmentBuild"
                         }
                     },
                     "404": {
@@ -111,7 +111,7 @@ const docTemplatev1alpha1 = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1alpha1.EnvrionmentBuild"
+                            "$ref": "#/definitions/v1alpha1.EnvironmentBuild"
                         }
                     },
                     "400": {
@@ -3982,7 +3982,7 @@ const docTemplatev1alpha1 = `{
                 }
             }
         },
-        "v1alpha1.EnvrionmentBuild": {
+        "v1alpha1.EnvironmentBuild": {
             "type": "object",
             "properties": {
                 "apiVersion": {
@@ -3997,14 +3997,14 @@ const docTemplatev1alpha1 = `{
                     "$ref": "#/definitions/v1.ObjectMeta"
                 },
                 "spec": {
-                    "$ref": "#/definitions/v1alpha1.EnvrionmentBuildSpec"
+                    "$ref": "#/definitions/v1alpha1.EnvironmentBuildSpec"
                 },
                 "status": {
-                    "$ref": "#/definitions/v1alpha1.EnvrionmentBuildStatus"
+                    "$ref": "#/definitions/v1alpha1.EnvironmentBuildStatus"
                 }
             }
         },
-        "v1alpha1.EnvrionmentBuildSpec": {
+        "v1alpha1.EnvironmentBuildSpec": {
             "type": "object",
             "properties": {
                 "template": {
@@ -4017,7 +4017,7 @@ const docTemplatev1alpha1 = `{
                 }
             }
         },
-        "v1alpha1.EnvrionmentBuildStatus": {
+        "v1alpha1.EnvironmentBuildStatus": {
             "type": "object",
             "properties": {
                 "taskCount": {

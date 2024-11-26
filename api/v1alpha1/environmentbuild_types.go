@@ -8,8 +8,8 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// EnvrionmentBuildSpec defines the desired state of EnvrionmentBuild.
-type EnvrionmentBuildSpec struct {
+// EnvironmentBuildSpec defines the desired state of EnvironmentBuild.
+type EnvironmentBuildSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
@@ -18,8 +18,8 @@ type EnvrionmentBuildSpec struct {
 	Template corev1.PodTemplateSpec `json:"template,omitempty"`
 }
 
-// EnvrionmentBuildStatus defines the observed state of EnvrionmentBuild.
-type EnvrionmentBuildStatus struct {
+// EnvironmentBuildStatus defines the observed state of EnvironmentBuild.
+type EnvironmentBuildStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
@@ -35,24 +35,24 @@ type EnvrionmentBuildStatus struct {
 
 // +kubebuilder:printcolumn:name="TaskCount",type=integer,JSONPath=`.status.taskCount`
 // +kubebuilder:printcolumn:name="ThreadCount",type=integer,JSONPath=`.status.threadCount`
-// EnvrionmentBuild is the Schema for the envrionmentbuilds API.
-type EnvrionmentBuild struct {
+// EnvironmentBuild is the Schema for the environmentbuilds API.
+type EnvironmentBuild struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   EnvrionmentBuildSpec   `json:"spec,omitempty"`
-	Status EnvrionmentBuildStatus `json:"status,omitempty"`
+	Spec   EnvironmentBuildSpec   `json:"spec,omitempty"`
+	Status EnvironmentBuildStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// EnvrionmentBuildList contains a list of EnvrionmentBuild.
-type EnvrionmentBuildList struct {
+// EnvironmentBuildList contains a list of EnvironmentBuild.
+type EnvironmentBuildList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []EnvrionmentBuild `json:"items"`
+	Items           []EnvironmentBuild `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&EnvrionmentBuild{}, &EnvrionmentBuildList{})
+	SchemeBuilder.Register(&EnvironmentBuild{}, &EnvironmentBuildList{})
 }

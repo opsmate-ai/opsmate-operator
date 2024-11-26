@@ -1,9 +1,9 @@
 apiVersion: sre.opsmate.io/v1alpha1
-kind: EnvrionmentBuild
+kind: EnvironmentBuild
 metadata:
   labels:
     app.kubernetes.io/name: opsmate-operator
     app.kubernetes.io/managed-by: kustomize
-  name: envrionmentbuild-sample
+  name: environmentbuild-sample
 spec:
   # TODO(user): Add fields here

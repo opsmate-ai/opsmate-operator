@@ -75,13 +75,13 @@ func (s *Service) Healthz(g *gin.Context) {
 // @Description get environment builds
 // @Accept  json
 // @Produce  json
-// @Success 200 {array} srev1alpha1.EnvrionmentBuild
+// @Success 200 {array} srev1alpha1.EnvironmentBuild
 // @Failure 404 {object} error
 // @Router /:namespace/environmentbuilds [get]
 func (s *Service) GetEnvironmentBuilds(g *gin.Context) {
 	ctx := g.Request.Context()
 	reglog := logger.G(ctx)
-	envBuilds := &srev1alpha1.EnvrionmentBuildList{}
+	envBuilds := &srev1alpha1.EnvironmentBuildList{}
 	if err := s.client.List(ctx, envBuilds, client.InNamespace(g.Param("namespace"))); err != nil {
 		reglog.WithError(err).Error("failed to list environment builds")
 		if apierrors.IsNotFound(err) {
@@ -98,7 +98,7 @@ func (s *Service) GetEnvironmentBuilds(g *gin.Context) {
 // @Description get environment build
 // @Accept  json
 // @Produce  json
-// @Success 200 {object} srev1alpha1.EnvrionmentBuild
+// @Success 200 {object} srev1alpha1.EnvironmentBuild
 // @Failure 404 {object} error
 // @Router /:namespace/environmentbuilds/:name [get]
 func (s *Service) GetEnvironmentBuild(g *gin.Context) {
@@ -108,7 +108,7 @@ func (s *Service) GetEnvironmentBuild(g *gin.Context) {
 		namespace = g.Param("namespace")
 		name      = g.Param("name")
 	)
-	envBuild := &srev1alpha1.EnvrionmentBuild{}
+	envBuild := &srev1alpha1.EnvironmentBuild{}
 	if err := s.client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, envBuild); err != nil {
 		reqLog.WithError(err).Error("failed to get environment build")
 		if apierrors.IsNotFound(err) {
@@ -123,15 +123,15 @@ func (s *Service) GetEnvironmentBuild(g *gin.Context) {
 
 // @Summary Create EnvironmentBuild
 // @Description create environment build
-// @Param environmentBuild body srev1alpha1.EnvrionmentBuild true "EnvironmentBuild"
+// @Param environmentBuild body srev1alpha1.EnvironmentBuild true "EnvironmentBuild"
 // @Produce  json
-// @Success 201 {object} srev1alpha1.EnvrionmentBuild
+// @Success 201 {object} srev1alpha1.EnvironmentBuild
 // @Failure 400 {object} error
 // @Router /:namespace/environmentbuilds [post]
 func (s *Service) CreateEnvironmentBuild(g *gin.Context) {
 	var (
 		namespace = g.Param("namespace")
-		envBuild  = srev1alpha1.EnvrionmentBuild{}
+		envBuild  = srev1alpha1.EnvironmentBuild{}
 		ctx       = g.Request.Context()
 		reqLog    = logger.G(ctx)
 	)
@@ -153,14 +153,14 @@ func (s *Service) CreateEnvironmentBuild(g *gin.Context) {
 // @Description update environment build
 // @Accept  json
 // @Produce  json
-// @Success 200 {object} srev1alpha1.EnvrionmentBuild
+// @Success 200 {object} srev1alpha1.EnvironmentBuild
 // @Failure 400 {object} error
 // @Router /:namespace/environmentbuilds/:name [put]
 func (s *Service) UpdateEnvironmentBuild(g *gin.Context) {
 	var (
 		namespace = g.Param("namespace")
 		name      = g.Param("name")
-		envBuild  = srev1alpha1.EnvrionmentBuild{}
+		envBuild  = srev1alpha1.EnvironmentBuild{}
 		ctx       = g.Request.Context()
 		reqLog    = logger.G(ctx)
 	)
@@ -172,7 +172,7 @@ func (s *Service) UpdateEnvironmentBuild(g *gin.Context) {
 	}
 
 	// get existing env build
-	existingEnvBuild := &srev1alpha1.EnvrionmentBuild{}
+	existingEnvBuild := &srev1alpha1.EnvironmentBuild{}
 	if err := s.client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, existingEnvBuild); err != nil {
 		reqLog.WithError(err).Error("failed to get environment build")
 		if apierrors.IsNotFound(err) {

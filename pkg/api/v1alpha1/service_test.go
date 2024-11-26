@@ -35,12 +35,12 @@ var _ = Describe("Service", func() {
 		scheme := runtime.NewScheme()
 		Expect(srev1alpha1.AddToScheme(scheme)).To(Succeed())
 
-		envBuild := &srev1alpha1.EnvrionmentBuild{
+		envBuild := &srev1alpha1.EnvironmentBuild{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-env-build",
 				Namespace: "default",
 			},
-			Spec: srev1alpha1.EnvrionmentBuildSpec{
+			Spec: srev1alpha1.EnvironmentBuildSpec{
 				Template: corev1.PodTemplateSpec{
 					Spec: corev1.PodSpec{
 						Containers: []corev1.Container{
@@ -95,7 +95,7 @@ var _ = Describe("Service", func() {
 			router.ServeHTTP(w, req)
 			Expect(w.Code).To(Equal(http.StatusOK))
 
-			var envBuilds []srev1alpha1.EnvrionmentBuild
+			var envBuilds []srev1alpha1.EnvironmentBuild
 			Expect(json.Unmarshal(w.Body.Bytes(), &envBuilds)).To(Succeed())
 			Expect(envBuilds).To(HaveLen(1))
 			Expect(envBuilds[0].Name).To(Equal("test-env-build"))
@@ -111,7 +111,7 @@ var _ = Describe("Service", func() {
 			router.ServeHTTP(w, req)
 			Expect(w.Code).To(Equal(http.StatusOK))
 
-			var envBuild srev1alpha1.EnvrionmentBuild
+			var envBuild srev1alpha1.EnvironmentBuild
 			Expect(json.Unmarshal(w.Body.Bytes(), &envBuild)).To(Succeed())
 			Expect(envBuild.Name).To(Equal("test-env-build"))
 		})
@@ -138,12 +138,12 @@ var _ = Describe("Service", func() {
 	Context("POST /api/v1alpha1/:namespace/environmentbuilds", func() {
 		It("should return 201 when the record is created", func() {
 			w := httptest.NewRecorder()
-			newEnvBuild := &srev1alpha1.EnvrionmentBuild{
+			newEnvBuild := &srev1alpha1.EnvironmentBuild{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-env-build-2",
 					Namespace: "default",
 				},
-				Spec: srev1alpha1.EnvrionmentBuildSpec{
+				Spec: srev1alpha1.EnvironmentBuildSpec{
 					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
@@ -165,11 +165,11 @@ var _ = Describe("Service", func() {
 			router.ServeHTTP(w, req)
 			Expect(w.Code).To(Equal(http.StatusCreated))
 
-			var createdEnvBuild srev1alpha1.EnvrionmentBuild
+			var createdEnvBuild srev1alpha1.EnvironmentBuild
 			Expect(json.Unmarshal(w.Body.Bytes(), &createdEnvBuild)).To(Succeed())
 			Expect(createdEnvBuild.Name).To(Equal("test-env-build-2"))
 
-			var builds srev1alpha1.EnvrionmentBuildList
+			var builds srev1alpha1.EnvironmentBuildList
 			Expect(k8sClient.List(context.Background(), &builds)).To(Succeed())
 			Expect(builds.Items).To(HaveLen(2))
 		})
@@ -196,12 +196,12 @@ var _ = Describe("Service", func() {
 	Context("PUT /api/v1alpha1/:namespace/environmentbuilds/:name", func() {
 		It("should return 200 when the record is updated", func() {
 			w := httptest.NewRecorder()
-			envBuild := &srev1alpha1.EnvrionmentBuild{
+			envBuild := &srev1alpha1.EnvironmentBuild{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-env-build",
 					Namespace: "default",
 				},
-				Spec: srev1alpha1.EnvrionmentBuildSpec{
+				Spec: srev1alpha1.EnvironmentBuildSpec{
 					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
@@ -223,18 +223,18 @@ var _ = Describe("Service", func() {
 			router.ServeHTTP(w, req)
 			Expect(w.Code).To(Equal(http.StatusOK))
 
-			var updatedEnvBuild srev1alpha1.EnvrionmentBuild
+			var updatedEnvBuild srev1alpha1.EnvironmentBuild
 			Expect(json.Unmarshal(w.Body.Bytes(), &updatedEnvBuild)).To(Succeed())
 			Expect(updatedEnvBuild.Name).To(Equal("test-env-build"))
 		})
 
 		It("should return 404 when the record does not exist", func() {
-			envBuild := &srev1alpha1.EnvrionmentBuild{
+			envBuild := &srev1alpha1.EnvironmentBuild{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "not-found",
 					Namespace: "default",
 				},
-				Spec: srev1alpha1.EnvrionmentBuildSpec{
+				Spec: srev1alpha1.EnvironmentBuildSpec{
 					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{

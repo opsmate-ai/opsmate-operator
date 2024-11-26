@@ -83,7 +83,7 @@ var _ = BeforeSuite(func() {
 	// https://github.com/kubernetes-sigs/kubebuilder/issues/2128
 	// if you ever think about using k8sClient here, you will get into trouble
 	// 2 hours of my life wasted :/
-	err = (&EnvrionmentBuildReconciler{
+	err = (&EnvironmentBuildReconciler{
 		Client: k8sMgr.GetClient(),
 		Scheme: k8sMgr.GetScheme(),
 	}).SetupWithManager(k8sMgr)

@@ -26,7 +26,7 @@ rules:
 - apiGroups:
   - sre.opsmate.io
   resources:
-  - envrionmentbuilds
+  - environmentbuilds
   - tasks
   verbs:
   - create
@@ -39,14 +39,14 @@ rules:
 - apiGroups:
   - sre.opsmate.io
   resources:
-  - envrionmentbuilds/finalizers
+  - environmentbuilds/finalizers
   - tasks/finalizers
   verbs:
   - update
 - apiGroups:
   - sre.opsmate.io
   resources:
-  - envrionmentbuilds/status
+  - environmentbuilds/status
   - tasks/status
   verbs:
   - get

@@ -15,7 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("EnvrionmentBuild Controller", func() {
+var _ = Describe("EnvironmentBuild Controller", func() {
 	Context("When reconciling a resource", func() {
 		const resourceName = "test-resource"
 
@@ -25,18 +25,18 @@ var _ = Describe("EnvrionmentBuild Controller", func() {
 			Name:      resourceName,
 			Namespace: "default", // TODO(user):Modify as needed
 		}
-		envrionmentbuild := &srev1alpha1.EnvrionmentBuild{}
+		environmentbuild := &srev1alpha1.EnvironmentBuild{}
 
 		BeforeEach(func() {
-			By("creating the custom resource for the Kind EnvrionmentBuild")
-			err := k8sClient.Get(ctx, typeNamespacedName, envrionmentbuild)
+			By("creating the custom resource for the Kind EnvironmentBuild")
+			err := k8sClient.Get(ctx, typeNamespacedName, environmentbuild)
 			if err != nil && errors.IsNotFound(err) {
-				resource := &srev1alpha1.EnvrionmentBuild{
+				resource := &srev1alpha1.EnvironmentBuild{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: "default",
 					},
-					Spec: srev1alpha1.EnvrionmentBuildSpec{
+					Spec: srev1alpha1.EnvironmentBuildSpec{
 						Template: corev1.PodTemplateSpec{
 							Spec: corev1.PodSpec{
 								Containers: []corev1.Container{
@@ -58,7 +58,7 @@ var _ = Describe("EnvrionmentBuild Controller", func() {
 			Expect(
 				k8sClient.DeleteAllOf(
 					ctx,
-					&srev1alpha1.EnvrionmentBuild{},
+					&srev1alpha1.EnvironmentBuild{},
 					client.InNamespace("default"),
 				),
 			).To(Succeed())
@@ -81,7 +81,7 @@ var _ = Describe("EnvrionmentBuild Controller", func() {
 			Expect(k8sClient.Create(ctx, task)).To(Succeed())
 
 			Eventually(func() int {
-				envBuild := &srev1alpha1.EnvrionmentBuild{
+				envBuild := &srev1alpha1.EnvironmentBuild{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: "default",
@@ -95,7 +95,7 @@ var _ = Describe("EnvrionmentBuild Controller", func() {
 			By("Deleting the task the task count should be 0")
 			Expect(k8sClient.Delete(ctx, task)).To(Succeed())
 			Eventually(func() int {
-				envBuild := &srev1alpha1.EnvrionmentBuild{
+				envBuild := &srev1alpha1.EnvironmentBuild{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: "default",

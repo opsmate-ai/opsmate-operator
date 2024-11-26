@@ -27,7 +27,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/v1alpha1.EnvrionmentBuild"
+                                "$ref": "#/definitions/v1alpha1.EnvironmentBuild"
                             }
                         }
                     },
@@ -50,7 +50,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1alpha1.EnvrionmentBuild"
+                            "$ref": "#/definitions/v1alpha1.EnvironmentBuild"
                         }
                     }
                 ],
@@ -58,7 +58,7 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/v1alpha1.EnvrionmentBuild"
+                            "$ref": "#/definitions/v1alpha1.EnvironmentBuild"
                         }
                     },
                     "400": {
@@ -82,7 +82,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1alpha1.EnvrionmentBuild"
+                            "$ref": "#/definitions/v1alpha1.EnvironmentBuild"
                         }
                     },
                     "404": {
@@ -104,7 +104,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1alpha1.EnvrionmentBuild"
+                            "$ref": "#/definitions/v1alpha1.EnvironmentBuild"
                         }
                     },
                     "400": {
@@ -3975,7 +3975,7 @@
                 }
             }
         },
-        "v1alpha1.EnvrionmentBuild": {
+        "v1alpha1.EnvironmentBuild": {
             "type": "object",
             "properties": {
                 "apiVersion": {
@@ -3990,14 +3990,14 @@
                     "$ref": "#/definitions/v1.ObjectMeta"
                 },
                 "spec": {
-                    "$ref": "#/definitions/v1alpha1.EnvrionmentBuildSpec"
+                    "$ref": "#/definitions/v1alpha1.EnvironmentBuildSpec"
                 },
                 "status": {
-                    "$ref": "#/definitions/v1alpha1.EnvrionmentBuildStatus"
+                    "$ref": "#/definitions/v1alpha1.EnvironmentBuildStatus"
                 }
             }
         },
-        "v1alpha1.EnvrionmentBuildSpec": {
+        "v1alpha1.EnvironmentBuildSpec": {
             "type": "object",
             "properties": {
                 "template": {
@@ -4010,7 +4010,7 @@
                 }
             }
         },
-        "v1alpha1.EnvrionmentBuildStatus": {
+        "v1alpha1.EnvironmentBuildStatus": {
             "type": "object",
             "properties": {
                 "taskCount": {
