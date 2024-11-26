@@ -17,8 +17,8 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
-// EnvrionmentBuildReconciler reconciles a EnvrionmentBuild object
-type EnvrionmentBuildReconciler struct {
+// EnvironmentBuildReconciler reconciles a EnvironmentBuild object
+type EnvironmentBuildReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 }
@@ -27,22 +27,22 @@ const (
 	taskIndexerKey = ".spec.environmentBuildName"
 )
 
-// +kubebuilder:rbac:groups=sre.opsmate.io,resources=envrionmentbuilds,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=sre.opsmate.io,resources=envrionmentbuilds/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=sre.opsmate.io,resources=envrionmentbuilds/finalizers,verbs=update
+// +kubebuilder:rbac:groups=sre.opsmate.io,resources=environmentbuilds,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=sre.opsmate.io,resources=environmentbuilds/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=sre.opsmate.io,resources=environmentbuilds/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.19.1/pkg/reconcile
-func (r *EnvrionmentBuildReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *EnvironmentBuildReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	var envBuild srev1alpha1.EnvrionmentBuild
+	var envBuild srev1alpha1.EnvironmentBuild
 	if err := r.Get(ctx, req.NamespacedName, &envBuild); err != nil {
 		if apierrors.IsNotFound(err) {
-			logger.Error(err, "unable to find EnvrionmentBuild")
+			logger.Error(err, "unable to find EnvironmentBuild")
 		}
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
@@ -72,7 +72,7 @@ func (r *EnvrionmentBuildReconciler) Reconcile(ctx context.Context, req ctrl.Req
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *EnvrionmentBuildReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *EnvironmentBuildReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &srev1alpha1.Task{}, taskIndexerKey, func(rawObj client.Object) []string {
 		task := rawObj.(*srev1alpha1.Task)
 		if task.Spec.EnvironmentBuildName == "" {
@@ -84,8 +84,8 @@ func (r *EnvrionmentBuildReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&srev1alpha1.EnvrionmentBuild{}).
-		Named("envrionmentbuild").
+		For(&srev1alpha1.EnvironmentBuild{}).
+		Named("environmentbuild").
 		Watches(
 			&srev1alpha1.Task{},
 			handler.EnqueueRequestsFromMapFunc(r.enqueueTaskRequests),
@@ -94,7 +94,7 @@ func (r *EnvrionmentBuildReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *EnvrionmentBuildReconciler) enqueueTaskRequests(ctx context.Context, obj client.Object) []reconcile.Request {
+func (r *EnvironmentBuildReconciler) enqueueTaskRequests(ctx context.Context, obj client.Object) []reconcile.Request {
 	var (
 		task srev1alpha1.Task
 	)

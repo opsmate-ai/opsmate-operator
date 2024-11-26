@@ -14,7 +14,7 @@ resources:
   controller: true
   domain: opsmate.io
   group: sre
-  kind: EnvrionmentBuild
+  kind: EnvironmentBuild
   path: github.com/jingkaihe/opsmate-operator/api/v1alpha1
   version: v1alpha1
 - api:

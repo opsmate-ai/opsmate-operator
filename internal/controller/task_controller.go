@@ -131,7 +131,7 @@ func (r *TaskReconciler) statePending(ctx context.Context, task *srev1alpha1.Tas
 	logger := log.FromContext(ctx)
 
 	// get the environment build
-	var envBuild srev1alpha1.EnvrionmentBuild
+	var envBuild srev1alpha1.EnvironmentBuild
 	if err := r.Get(ctx, client.ObjectKey{
 		Name:      task.Spec.EnvironmentBuildName,
 		Namespace: task.Namespace,

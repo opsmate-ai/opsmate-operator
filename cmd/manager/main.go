@@ -135,11 +135,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controller.EnvrionmentBuildReconciler{
+	if err = (&controller.EnvironmentBuildReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "EnvrionmentBuild")
+		setupLog.Error(err, "unable to create controller", "controller", "EnvironmentBuild")
 		os.Exit(1)
 	}
 	if err = controller.NewTaskReconciler(mgr).SetupWithManager(mgr); err != nil {

@@ -24,6 +24,5 @@ resources:
 # if you do not want those helpers be installed with your Project.
 - task_editor_role.yaml
 - task_viewer_role.yaml
-- envrionmentbuild_editor_role.yaml
-- envrionmentbuild_viewer_role.yaml
-
+- environmentbuild_editor_role.yaml
+- environmentbuild_viewer_role.yaml

@@ -80,7 +80,7 @@ var _ = Describe("Task Controller", func() {
 		AfterEach(func() {
 			By("deleting all resources")
 			Expect(k8sClient.DeleteAllOf(ctx, &srev1alpha1.Task{}, client.InNamespace(namespace))).To(Succeed())
-			Expect(k8sClient.DeleteAllOf(ctx, &srev1alpha1.EnvrionmentBuild{}, client.InNamespace(namespace))).To(Succeed())
+			Expect(k8sClient.DeleteAllOf(ctx, &srev1alpha1.EnvironmentBuild{}, client.InNamespace(namespace))).To(Succeed())
 			Expect(k8sClient.DeleteAllOf(ctx, &corev1.Pod{}, client.InNamespace(namespace))).To(Succeed())
 		})
 
@@ -230,13 +230,13 @@ var _ = Describe("Task Controller", func() {
 	})
 })
 
-func newEnvBuild(name, namespace string) *srev1alpha1.EnvrionmentBuild {
-	return &srev1alpha1.EnvrionmentBuild{
+func newEnvBuild(name, namespace string) *srev1alpha1.EnvironmentBuild {
+	return &srev1alpha1.EnvironmentBuild{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
-		Spec: srev1alpha1.EnvrionmentBuildSpec{
+		Spec: srev1alpha1.EnvironmentBuildSpec{
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
