@@ -29,5 +29,8 @@ func register(router *gin.Engine, svc *Service) {
 	v1alpha1 := router.Group("/api/v1alpha1")
 
 	v1alpha1.GET("/healthz", svc.Healthz)
-	v1alpha1.GET("/environmentbuilds", svc.GetEnvironmentBuilds)
+	v1alpha1.GET("/:namespace/environmentbuilds", svc.GetEnvironmentBuilds)
+	v1alpha1.GET("/:namespace/environmentbuilds/:name", svc.GetEnvironmentBuild)
+	v1alpha1.POST("/:namespace/environmentbuilds", svc.CreateEnvironmentBuild)
+	v1alpha1.PUT("/:namespace/environmentbuilds/:name", svc.UpdateEnvironmentBuild)
 }

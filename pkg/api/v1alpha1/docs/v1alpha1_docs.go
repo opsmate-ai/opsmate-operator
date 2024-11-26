@@ -18,7 +18,7 @@ const docTemplatev1alpha1 = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/environmentbuilds": {
+        "/:namespace/environmentbuilds": {
             "get": {
                 "description": "get environment builds",
                 "consumes": [
@@ -37,6 +37,86 @@ const docTemplatev1alpha1 = `{
                                 "$ref": "#/definitions/v1alpha1.EnvrionmentBuild"
                             }
                         }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {}
+                    }
+                }
+            },
+            "post": {
+                "description": "create environment build",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Create EnvironmentBuild",
+                "parameters": [
+                    {
+                        "description": "EnvironmentBuild",
+                        "name": "environmentBuild",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1alpha1.EnvrionmentBuild"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/v1alpha1.EnvrionmentBuild"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {}
+                    }
+                }
+            }
+        },
+        "/:namespace/environmentbuilds/:name": {
+            "get": {
+                "description": "get environment build",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get EnvironmentBuild",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1alpha1.EnvrionmentBuild"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {}
+                    }
+                }
+            },
+            "put": {
+                "description": "update environment build",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Update EnvironmentBuild",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1alpha1.EnvrionmentBuild"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {}
                     }
                 }
             }

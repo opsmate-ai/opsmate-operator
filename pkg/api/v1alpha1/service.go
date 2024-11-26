@@ -8,7 +8,9 @@ import (
 	"github.com/gin-gonic/gin"
 	srev1alpha1 "github.com/jingkaihe/opsmate-operator/api/v1alpha1"
 	"github.com/jingkaihe/opsmate-operator/pkg/logger"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	goscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -74,15 +76,119 @@ func (s *Service) Healthz(g *gin.Context) {
 // @Accept  json
 // @Produce  json
 // @Success 200 {array} srev1alpha1.EnvrionmentBuild
-// @Router /environmentbuilds [get]
+// @Failure 404 {object} error
+// @Router /:namespace/environmentbuilds [get]
 func (s *Service) GetEnvironmentBuilds(g *gin.Context) {
 	ctx := g.Request.Context()
 	reglog := logger.G(ctx)
 	envBuilds := &srev1alpha1.EnvrionmentBuildList{}
-	if err := s.client.List(ctx, envBuilds); err != nil {
+	if err := s.client.List(ctx, envBuilds, client.InNamespace(g.Param("namespace"))); err != nil {
 		reglog.WithError(err).Error("failed to list environment builds")
-		g.JSON(http.StatusInternalServerError, err.Error())
+		if apierrors.IsNotFound(err) {
+			g.JSON(http.StatusNotFound, "not found")
+		} else {
+			g.JSON(http.StatusInternalServerError, "internal server error")
+		}
 		return
 	}
 	g.JSON(http.StatusOK, envBuilds.Items)
+}
+
+// @Summary Get EnvironmentBuild
+// @Description get environment build
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} srev1alpha1.EnvrionmentBuild
+// @Failure 404 {object} error
+// @Router /:namespace/environmentbuilds/:name [get]
+func (s *Service) GetEnvironmentBuild(g *gin.Context) {
+	var (
+		ctx       = g.Request.Context()
+		reqLog    = logger.G(ctx)
+		namespace = g.Param("namespace")
+		name      = g.Param("name")
+	)
+	envBuild := &srev1alpha1.EnvrionmentBuild{}
+	if err := s.client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, envBuild); err != nil {
+		reqLog.WithError(err).Error("failed to get environment build")
+		if apierrors.IsNotFound(err) {
+			g.JSON(http.StatusNotFound, "not found")
+		} else {
+			g.JSON(http.StatusInternalServerError, "internal server error")
+		}
+		return
+	}
+	g.JSON(http.StatusOK, envBuild)
+}
+
+// @Summary Create EnvironmentBuild
+// @Description create environment build
+// @Param environmentBuild body srev1alpha1.EnvrionmentBuild true "EnvironmentBuild"
+// @Produce  json
+// @Success 201 {object} srev1alpha1.EnvrionmentBuild
+// @Failure 400 {object} error
+// @Router /:namespace/environmentbuilds [post]
+func (s *Service) CreateEnvironmentBuild(g *gin.Context) {
+	var (
+		namespace = g.Param("namespace")
+		envBuild  = srev1alpha1.EnvrionmentBuild{}
+		ctx       = g.Request.Context()
+		reqLog    = logger.G(ctx)
+	)
+	if err := g.ShouldBindJSON(&envBuild); err != nil {
+		reqLog.WithError(err).Error("failed to bind environment build")
+		g.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	envBuild.Namespace = namespace
+	if err := s.client.Create(ctx, &envBuild); err != nil {
+		reqLog.WithError(err).Error("failed to create environment build")
+		g.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	g.JSON(http.StatusCreated, envBuild)
+}
+
+// @Summary Update EnvironmentBuild
+// @Description update environment build
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} srev1alpha1.EnvrionmentBuild
+// @Failure 400 {object} error
+// @Router /:namespace/environmentbuilds/:name [put]
+func (s *Service) UpdateEnvironmentBuild(g *gin.Context) {
+	var (
+		namespace = g.Param("namespace")
+		name      = g.Param("name")
+		envBuild  = srev1alpha1.EnvrionmentBuild{}
+		ctx       = g.Request.Context()
+		reqLog    = logger.G(ctx)
+	)
+
+	if err := g.ShouldBindJSON(&envBuild); err != nil {
+		reqLog.WithError(err).Error("failed to bind environment build")
+		g.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// get existing env build
+	existingEnvBuild := &srev1alpha1.EnvrionmentBuild{}
+	if err := s.client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, existingEnvBuild); err != nil {
+		reqLog.WithError(err).Error("failed to get environment build")
+		if apierrors.IsNotFound(err) {
+			g.JSON(http.StatusNotFound, "not found")
+		} else {
+			g.JSON(http.StatusInternalServerError, "internal server error")
+		}
+		return
+	}
+
+	// update env build
+	existingEnvBuild.Spec = envBuild.Spec
+	if err := s.client.Update(ctx, existingEnvBuild); err != nil {
+		reqLog.WithError(err).Error("failed to update environment build")
+		g.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	g.JSON(http.StatusOK, existingEnvBuild)
 }

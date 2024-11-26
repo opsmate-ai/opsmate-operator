@@ -4860,7 +4860,7 @@ info:
   title: Opsmate Operator API
   version: 0.1.0
 paths:
-  /environmentbuilds:
+  /:namespace/environmentbuilds:
     get:
       consumes:
       - application/json
@@ -4874,7 +4874,61 @@ paths:
             items:
               $ref: '#/definitions/v1alpha1.EnvrionmentBuild'
             type: array
+        "404":
+          description: Not Found
+          schema: {}
       summary: Get EnvironmentBuilds
+    post:
+      description: create environment build
+      parameters:
+      - description: EnvironmentBuild
+        in: body
+        name: environmentBuild
+        required: true
+        schema:
+          $ref: '#/definitions/v1alpha1.EnvrionmentBuild'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/v1alpha1.EnvrionmentBuild'
+        "400":
+          description: Bad Request
+          schema: {}
+      summary: Create EnvironmentBuild
+  /:namespace/environmentbuilds/:name:
+    get:
+      consumes:
+      - application/json
+      description: get environment build
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1alpha1.EnvrionmentBuild'
+        "404":
+          description: Not Found
+          schema: {}
+      summary: Get EnvironmentBuild
+    put:
+      consumes:
+      - application/json
+      description: update environment build
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1alpha1.EnvrionmentBuild'
+        "400":
+          description: Bad Request
+          schema: {}
+      summary: Update EnvironmentBuild
   /healthz:
     get:
       consumes:
