@@ -33,4 +33,5 @@ func register(router *gin.Engine, svc *Service) {
 	v1alpha1.GET("/:namespace/environmentbuilds/:name", svc.GetEnvironmentBuild)
 	v1alpha1.POST("/:namespace/environmentbuilds", svc.CreateEnvironmentBuild)
 	v1alpha1.PUT("/:namespace/environmentbuilds/:name", svc.UpdateEnvironmentBuild)
+	v1alpha1.DELETE("/:namespace/environmentbuilds/:name", svc.DeleteEnvironmentBuild)
 }

@@ -4877,6 +4877,9 @@ paths:
         "404":
           description: Not Found
           schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
       summary: Get EnvironmentBuilds
     post:
       description: create environment build
@@ -4899,6 +4902,22 @@ paths:
           schema: {}
       summary: Create EnvironmentBuild
   /:namespace/environmentbuilds/:name:
+    delete:
+      description: delete environment build
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+      summary: Delete EnvironmentBuild
     get:
       consumes:
       - application/json
@@ -4912,6 +4931,9 @@ paths:
             $ref: '#/definitions/v1alpha1.EnvironmentBuild'
         "404":
           description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
           schema: {}
       summary: Get EnvironmentBuild
     put:
@@ -4927,6 +4949,9 @@ paths:
             $ref: '#/definitions/v1alpha1.EnvironmentBuild'
         "400":
           description: Bad Request
+          schema: {}
+        "404":
+          description: Not Found
           schema: {}
       summary: Update EnvironmentBuild
   /healthz:

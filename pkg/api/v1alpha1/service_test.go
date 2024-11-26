@@ -267,4 +267,24 @@ var _ = Describe("Service", func() {
 		// 	Expect(w.Code).To(Equal(http.StatusBadRequest))
 		// })
 	})
+
+	Context("DELETE /api/v1alpha1/:namespace/environmentbuilds/:name", func() {
+		It("should return 200 when the record is deleted", func() {
+			w := httptest.NewRecorder()
+			req, err := http.NewRequest(http.MethodDelete, "/api/v1alpha1/default/environmentbuilds/test-env-build", nil)
+			Expect(err).NotTo(HaveOccurred())
+
+			router.ServeHTTP(w, req)
+			Expect(w.Code).To(Equal(http.StatusOK))
+		})
+
+		It("should return 404 when the record does not exist", func() {
+			w := httptest.NewRecorder()
+			req, err := http.NewRequest(http.MethodDelete, "/api/v1alpha1/default/environmentbuilds/not-found", nil)
+			Expect(err).NotTo(HaveOccurred())
+
+			router.ServeHTTP(w, req)
+			Expect(w.Code).To(Equal(http.StatusNotFound))
+		})
+	})
 })

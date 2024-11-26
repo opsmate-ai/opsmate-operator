@@ -9,6 +9,7 @@ import (
 	srev1alpha1 "github.com/jingkaihe/opsmate-operator/api/v1alpha1"
 	"github.com/jingkaihe/opsmate-operator/pkg/logger"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	goscheme "k8s.io/client-go/kubernetes/scheme"
@@ -77,6 +78,7 @@ func (s *Service) Healthz(g *gin.Context) {
 // @Produce  json
 // @Success 200 {array} srev1alpha1.EnvironmentBuild
 // @Failure 404 {object} error
+// @Failure 500 {object} error
 // @Router /:namespace/environmentbuilds [get]
 func (s *Service) GetEnvironmentBuilds(g *gin.Context) {
 	ctx := g.Request.Context()
@@ -100,6 +102,7 @@ func (s *Service) GetEnvironmentBuilds(g *gin.Context) {
 // @Produce  json
 // @Success 200 {object} srev1alpha1.EnvironmentBuild
 // @Failure 404 {object} error
+// @Failure 500 {object} error
 // @Router /:namespace/environmentbuilds/:name [get]
 func (s *Service) GetEnvironmentBuild(g *gin.Context) {
 	var (
@@ -154,6 +157,7 @@ func (s *Service) CreateEnvironmentBuild(g *gin.Context) {
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} srev1alpha1.EnvironmentBuild
+// @Failure 404 {object} error
 // @Failure 400 {object} error
 // @Router /:namespace/environmentbuilds/:name [put]
 func (s *Service) UpdateEnvironmentBuild(g *gin.Context) {
@@ -191,4 +195,33 @@ func (s *Service) UpdateEnvironmentBuild(g *gin.Context) {
 		return
 	}
 	g.JSON(http.StatusOK, existingEnvBuild)
+}
+
+// @Summary Delete EnvironmentBuild
+// @Description delete environment build
+// @Produce  json
+// @Success 200 {string} string
+// @Failure 404 {object} error
+// @Failure 400 {object} error
+// @Router /:namespace/environmentbuilds/:name [delete]
+func (s *Service) DeleteEnvironmentBuild(g *gin.Context) {
+	var (
+		namespace = g.Param("namespace")
+		name      = g.Param("name")
+		ctx       = g.Request.Context()
+		reqLog    = logger.G(ctx)
+	)
+
+	if err := s.client.Delete(ctx, &srev1alpha1.EnvironmentBuild{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
+	}); err != nil {
+		reqLog.WithError(err).Error("failed to delete environment build")
+		if apierrors.IsNotFound(err) {
+			g.JSON(http.StatusNotFound, "not found")
+		} else {
+			g.JSON(http.StatusBadRequest, err.Error())
+		}
+		return
+	}
+	g.JSON(http.StatusOK, "deleted")
 }

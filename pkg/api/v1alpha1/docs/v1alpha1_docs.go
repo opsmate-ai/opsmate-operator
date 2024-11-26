@@ -41,6 +41,10 @@ const docTemplatev1alpha1 = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {}
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {}
                     }
                 }
             },
@@ -95,6 +99,10 @@ const docTemplatev1alpha1 = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {}
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {}
                     }
                 }
             },
@@ -116,6 +124,33 @@ const docTemplatev1alpha1 = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {}
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {}
+                    }
+                }
+            },
+            "delete": {
+                "description": "delete environment build",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Delete EnvironmentBuild",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {}
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {}
                     }
                 }
