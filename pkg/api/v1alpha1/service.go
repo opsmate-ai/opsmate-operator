@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	srev1alpha1 "github.com/jingkaihe/opsmate-operator/api/v1alpha1"
@@ -60,6 +62,19 @@ func NewService(ctx context.Context) (*Service, error) {
 	}
 
 	return &Service{client: c}, nil
+}
+
+func Observe(path string) gin.HandlerFunc {
+	return func(g *gin.Context) {
+		now := time.Now()
+		defer func() {
+			duration := time.Since(now)
+			code := strconv.Itoa(g.Writer.Status())
+			HttpRequestsTotal.WithLabelValues(code, g.Request.Method, path).Inc()
+			HttpRequestDuration.WithLabelValues(code, g.Request.Method, path).Observe(duration.Seconds())
+		}()
+		g.Next()
+	}
 }
 
 // @Summary Get health status of the API server
@@ -216,6 +231,93 @@ func (s *Service) DeleteEnvironmentBuild(g *gin.Context) {
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
 	}); err != nil {
 		reqLog.WithError(err).Error("failed to delete environment build")
+		if apierrors.IsNotFound(err) {
+			g.JSON(http.StatusNotFound, "not found")
+		} else {
+			g.JSON(http.StatusBadRequest, err.Error())
+		}
+		return
+	}
+	g.JSON(http.StatusOK, "deleted")
+}
+
+// @Summary Get Task
+// @Description get task
+// @Produce  json
+// @Success 200 {object} srev1alpha1.Task
+// @Failure 404 {object} error
+// @Failure 500 {object} error
+// @Router /:namespace/tasks/:name [get]
+func (s *Service) GetTask(g *gin.Context) {
+	var (
+		namespace = g.Param("namespace")
+		name      = g.Param("name")
+		ctx       = g.Request.Context()
+		reqLog    = logger.G(ctx)
+		task      = &srev1alpha1.Task{}
+	)
+
+	if err := s.client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, task); err != nil {
+		reqLog.WithError(err).Error("failed to get task")
+		if apierrors.IsNotFound(err) {
+			g.JSON(http.StatusNotFound, "not found")
+		} else {
+			g.JSON(http.StatusInternalServerError, "internal server error")
+		}
+	}
+
+	g.JSON(http.StatusOK, task)
+}
+
+// @Summary Create Task
+// @Description create task
+// @Accept  json
+// @Produce  json
+// @Success 201 {object} srev1alpha1.Task
+// @Failure 400 {object} error
+// @Router /:namespace/tasks [post]
+func (s *Service) CreateTask(g *gin.Context) {
+	var (
+		namespace = g.Param("namespace")
+		task      = srev1alpha1.Task{}
+		ctx       = g.Request.Context()
+		reqLog    = logger.G(ctx)
+	)
+
+	if err := g.ShouldBindJSON(&task); err != nil {
+		reqLog.WithError(err).Error("failed to bind task")
+		g.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	task.Namespace = namespace
+	if err := s.client.Create(ctx, &task); err != nil {
+		reqLog.WithError(err).Error("failed to create task")
+		g.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	g.JSON(http.StatusCreated, task)
+}
+
+// @Summary Delete Task
+// @Description delete task
+// @Produce  json
+// @Success 200 {string} string
+// @Failure 404 {object} error
+// @Failure 400 {object} error
+// @Router /:namespace/tasks/:name [delete]
+func (s *Service) DeleteTask(g *gin.Context) {
+	var (
+		namespace = g.Param("namespace")
+		name      = g.Param("name")
+		ctx       = g.Request.Context()
+		reqLog    = logger.G(ctx)
+	)
+
+	if err := s.client.Delete(ctx, &srev1alpha1.Task{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
+	}); err != nil {
+		reqLog.WithError(err).Error("failed to delete task")
 		if apierrors.IsNotFound(err) {
 			g.JSON(http.StatusNotFound, "not found")
 		} else {

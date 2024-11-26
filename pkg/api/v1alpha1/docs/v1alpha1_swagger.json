@@ -149,6 +149,78 @@
                 }
             }
         },
+        "/:namespace/tasks": {
+            "post": {
+                "description": "create task",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Create Task",
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/v1alpha1.Task"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {}
+                    }
+                }
+            }
+        },
+        "/:namespace/tasks/:name": {
+            "get": {
+                "description": "get task",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get Task",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1alpha1.Task"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {}
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {}
+                    }
+                }
+            },
+            "delete": {
+                "description": "delete task",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Delete Task",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {}
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {}
+                    }
+                }
+            }
+        },
         "/healthz": {
             "get": {
                 "description": "get health check endpoint",
@@ -198,6 +270,19 @@
             "x-enum-varnames": [
                 "Int",
                 "String"
+            ]
+        },
+        "k8s_io_apimachinery_pkg_apis_meta_v1.ConditionStatus": {
+            "type": "string",
+            "enum": [
+                "True",
+                "False",
+                "Unknown"
+            ],
+            "x-enum-varnames": [
+                "ConditionTrue",
+                "ConditionFalse",
+                "ConditionUnknown"
             ]
         },
         "resource.Quantity": {
@@ -520,6 +605,39 @@
                 },
                 "signerName": {
                     "description": "Select all ClusterTrustBundles that match this signer name.\nMutually-exclusive with name.  The contents of all selected\nClusterTrustBundles will be unified and deduplicated.\n+optional",
+                    "type": "string"
+                }
+            }
+        },
+        "v1.Condition": {
+            "type": "object",
+            "properties": {
+                "lastTransitionTime": {
+                    "description": "lastTransitionTime is the last time the condition transitioned from one status to another.\nThis should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.\n+required\n+kubebuilder:validation:Required\n+kubebuilder:validation:Type=string\n+kubebuilder:validation:Format=date-time",
+                    "type": "string"
+                },
+                "message": {
+                    "description": "message is a human readable message indicating details about the transition.\nThis may be an empty string.\n+required\n+kubebuilder:validation:Required\n+kubebuilder:validation:MaxLength=32768",
+                    "type": "string"
+                },
+                "observedGeneration": {
+                    "description": "observedGeneration represents the .metadata.generation that the condition was set based upon.\nFor instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date\nwith respect to the current state of the instance.\n+optional\n+kubebuilder:validation:Minimum=0",
+                    "type": "integer"
+                },
+                "reason": {
+                    "description": "reason contains a programmatic identifier indicating the reason for the condition's last transition.\nProducers of specific condition types may define expected values and meanings for this field,\nand whether the values are considered a guaranteed API.\nThe value should be a CamelCase string.\nThis field may not be empty.\n+required\n+kubebuilder:validation:Required\n+kubebuilder:validation:MaxLength=1024\n+kubebuilder:validation:MinLength=1\n+kubebuilder:validation:Pattern=`^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$`",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "status of the condition, one of True, False, Unknown.\n+required\n+kubebuilder:validation:Required\n+kubebuilder:validation:Enum=True;False;Unknown",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/k8s_io_apimachinery_pkg_apis_meta_v1.ConditionStatus"
+                        }
+                    ]
+                },
+                "type": {
+                    "description": "type of condition in CamelCase or in foo.example.com/CamelCase.\n---\nMany .condition.type values are consistent across resources like Available, but because arbitrary conditions can be\nuseful (see .node.status.conditions), the ability to deconflict is important.\nThe regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)\n+required\n+kubebuilder:validation:Required\n+kubebuilder:validation:Pattern=`^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$`\n+kubebuilder:validation:MaxLength=316",
                     "type": "string"
                 }
             }
@@ -1938,6 +2056,39 @@
                 },
                 "uid": {
                     "description": "UID is the unique in time and space value for this object. It is typically generated by\nthe server on successful creation of a resource and is not allowed to change on PUT\noperations.\n\nPopulated by the system.\nRead-only.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#uids\n+optional",
+                    "type": "string"
+                }
+            }
+        },
+        "v1.ObjectReference": {
+            "type": "object",
+            "properties": {
+                "apiVersion": {
+                    "description": "API version of the referent.\n+optional",
+                    "type": "string"
+                },
+                "fieldPath": {
+                    "description": "If referring to a piece of an object instead of an entire object, this string\nshould contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2].\nFor example, if the object reference is to a container within a pod, this would take on a value like:\n\"spec.containers{name}\" (where \"name\" refers to the name of the container that triggered\nthe event) or if no container name is specified \"spec.containers[2]\" (container with\nindex 2 in this pod). This syntax is chosen only to have some well-defined way of\nreferencing a part of an object.\nTODO: this design is not final and this field is subject to change in the future.\n+optional",
+                    "type": "string"
+                },
+                "kind": {
+                    "description": "Kind of the referent.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds\n+optional",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Name of the referent.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names\n+optional",
+                    "type": "string"
+                },
+                "namespace": {
+                    "description": "Namespace of the referent.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/\n+optional",
+                    "type": "string"
+                },
+                "resourceVersion": {
+                    "description": "Specific resourceVersion to which this reference is made, if any.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency\n+optional",
+                    "type": "string"
+                },
+                "uid": {
+                    "description": "UID of the referent.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids\n+optional",
                     "type": "string"
                 }
             }
@@ -4055,6 +4206,89 @@
                 "threadCount": {
                     "description": "Number of threads uses this environmentBuild",
                     "type": "integer"
+                }
+            }
+        },
+        "v1alpha1.Task": {
+            "type": "object",
+            "properties": {
+                "apiVersion": {
+                    "description": "APIVersion defines the versioned schema of this representation of an object.\nServers should convert recognized schemas to the latest internal value, and\nmay reject unrecognized values.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources\n+optional",
+                    "type": "string"
+                },
+                "kind": {
+                    "description": "Kind is a string value representing the REST resource this object represents.\nServers may infer this from the endpoint the client submits requests to.\nCannot be updated.\nIn CamelCase.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds\n+optional",
+                    "type": "string"
+                },
+                "metadata": {
+                    "$ref": "#/definitions/v1.ObjectMeta"
+                },
+                "spec": {
+                    "$ref": "#/definitions/v1alpha1.TaskSpec"
+                },
+                "status": {
+                    "$ref": "#/definitions/v1alpha1.TaskStatus"
+                }
+            }
+        },
+        "v1alpha1.TaskSpec": {
+            "type": "object",
+            "properties": {
+                "context": {
+                    "description": "Context is the execution context for the task\n+kubebuilder:validation:Required",
+                    "type": "string"
+                },
+                "environmentBuildName": {
+                    "description": "The environmentBuild that the task will use, must be in the same namespace as the task\n+kubebuilder:validation:Required",
+                    "type": "string"
+                },
+                "instruction": {
+                    "description": "Instruction is the instruction for the task\n+kubebuilder:validation:Required",
+                    "type": "string"
+                },
+                "userID": {
+                    "description": "The user ID that initiated the Task\n+kubebuilder:validation:Required\n+kubebuilder:default:=\"anonymous\"",
+                    "type": "string"
+                }
+            }
+        },
+        "v1alpha1.TaskStatus": {
+            "type": "object",
+            "properties": {
+                "allocatedAt": {
+                    "description": "The time when the task pod is up and running\n+optional",
+                    "type": "string"
+                },
+                "conditions": {
+                    "description": "The conditions of the task\n+optional",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.Condition"
+                    }
+                },
+                "internalIP": {
+                    "description": "Internal IP of the Task Pod\n+optional",
+                    "type": "string"
+                },
+                "output": {
+                    "description": "Output of the task\n+optional",
+                    "type": "string"
+                },
+                "pod": {
+                    "description": "Pod is the reference to the pod that is running the task\n+optional",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1.ObjectReference"
+                        }
+                    ]
+                },
+                "reason": {
+                    "description": "Reason for the error\n+optional",
+                    "type": "string"
+                },
+                "state": {
+                    "description": "+kubebuilder:validation:Enum=PENDING;SCHEDULED;RUNNING;TERMINATING;ERROR;NOT_FOUND\n+kubebuilder:default:=PENDING",
+                    "type": "string"
                 }
             }
         }

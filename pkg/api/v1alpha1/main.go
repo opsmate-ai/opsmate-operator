@@ -28,10 +28,15 @@ func Register(router *gin.Engine, config context.Context) error {
 func register(router *gin.Engine, svc *Service) {
 	v1alpha1 := router.Group("/api/v1alpha1")
 
-	v1alpha1.GET("/healthz", svc.Healthz)
-	v1alpha1.GET("/:namespace/environmentbuilds", svc.GetEnvironmentBuilds)
-	v1alpha1.GET("/:namespace/environmentbuilds/:name", svc.GetEnvironmentBuild)
-	v1alpha1.POST("/:namespace/environmentbuilds", svc.CreateEnvironmentBuild)
-	v1alpha1.PUT("/:namespace/environmentbuilds/:name", svc.UpdateEnvironmentBuild)
-	v1alpha1.DELETE("/:namespace/environmentbuilds/:name", svc.DeleteEnvironmentBuild)
+	v1alpha1.GET("/healthz", Observe("/healthz"), svc.Healthz)
+
+	v1alpha1.GET("/:namespace/environmentbuilds", Observe("/:namespace/environmentbuilds"), svc.GetEnvironmentBuilds)
+	v1alpha1.GET("/:namespace/environmentbuilds/:name", Observe("/:namespace/environmentbuilds/:name"), svc.GetEnvironmentBuild)
+	v1alpha1.POST("/:namespace/environmentbuilds", Observe("/:namespace/environmentbuilds"), svc.CreateEnvironmentBuild)
+	v1alpha1.PUT("/:namespace/environmentbuilds/:name", Observe("/:namespace/environmentbuilds/:name"), svc.UpdateEnvironmentBuild)
+	v1alpha1.DELETE("/:namespace/environmentbuilds/:name", Observe("/:namespace/environmentbuilds/:name"), svc.DeleteEnvironmentBuild)
+
+	v1alpha1.GET("/:namespace/tasks/:name", Observe("/:namespace/tasks/:name"), svc.GetTask)
+	v1alpha1.POST("/:namespace/tasks", Observe("/:namespace/tasks"), svc.CreateTask)
+	v1alpha1.DELETE("/:namespace/tasks/:name", Observe("/:namespace/tasks/:name"), svc.DeleteTask)
 }
