@@ -29,7 +29,7 @@ var (
 	)
 )
 
-func Init(ctx context.Context) {
+func InitMetricsServer(ctx context.Context) {
 	Registry.MustRegister(HttpRequestsTotal)
 	Registry.MustRegister(HttpRequestDuration)
 	Registry.MustRegister(collectors.NewGoCollector())
@@ -43,7 +43,16 @@ func Init(ctx context.Context) {
 
 	logger.G(ctx).Info("Starting metrics server on :8081")
 	go func() {
-		if err := http.ListenAndServe("0.0.0.0:8081", nil); err != nil {
+		server := &http.Server{Addr: "0.0.0.0:8081"}
+
+		go func() {
+			<-ctx.Done()
+			if err := server.Shutdown(context.Background()); err != nil {
+				logger.G(ctx).WithError(err).Error("failed to gracefully shutdown metrics server")
+			}
+		}()
+
+		if err := server.ListenAndServe(); err != http.ErrServerClosed {
 			// non-critical, just log the error
 			logger.G(ctx).WithError(err).Error("failed to start metrics server")
 		}

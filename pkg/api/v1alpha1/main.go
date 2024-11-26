@@ -15,8 +15,8 @@ import (
 
 // @BasePath /api/v1alpha1
 
-func Register(router *gin.Engine, config context.Context) error {
-	svc, err := NewService(config)
+func Register(ctx context.Context, router *gin.Engine) error {
+	svc, err := NewService(ctx)
 	if err != nil {
 		return err
 	}
