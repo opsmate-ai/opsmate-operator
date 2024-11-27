@@ -372,6 +372,7 @@ func (r *TaskReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&srev1alpha1.Task{}).
 		Named("task").
 		Owns(&corev1.Pod{}).
+		Owns(&corev1.Service{}).
 		Complete(r)
 }
 

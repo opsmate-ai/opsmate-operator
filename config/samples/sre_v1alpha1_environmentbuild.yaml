@@ -16,3 +16,8 @@ spec:
           envFrom:
             - secretRef:
                 name: opsmate-secret
+  service:
+    type: NodePort
+    ports:
+      - port: 80
+        targetPort: 8000
