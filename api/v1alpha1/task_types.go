@@ -99,6 +99,8 @@ type TaskStatus struct {
 // +kubebuilder:printcolumn:name="State",type=string,JSONPath=`.status.state`
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.reason`
 // +kubebuilder:printcolumn:name="InternalIP",type=string,JSONPath=`.status.internalIP`
+// +kubebuilder:printcolumn:name="ServiceIP",type=string,JSONPath=`.status.serviceIP`
+// +kubebuilder:printcolumn:name="IngressDomain",type=string,JSONPath=`.status.ingressDomain`
 // Task is the Schema for the tasks API.
 type Task struct {
 	metav1.TypeMeta   `json:",inline"`

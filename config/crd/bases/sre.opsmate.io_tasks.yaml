@@ -36,6 +36,12 @@ spec:
     - jsonPath: .status.internalIP
       name: InternalIP
       type: string
+    - jsonPath: .status.serviceIP
+      name: ServiceIP
+      type: string
+    - jsonPath: .status.ingressDomain
+      name: IngressDomain
+      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:

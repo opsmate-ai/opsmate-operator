@@ -211,7 +211,12 @@ $(KIND): $(LOCALBIN)
 
 .PONY: kind-cluster
 kind-cluster: kind ## Create a kind cluster.
-	$(KIND) create cluster --name kind
+	$(KIND) create cluster --name kind --config ./hack/kind-config.yaml || true
+	# $(KUBECTL) apply -f https://kind.sigs.k8s.io/examples/ingress/deploy-ingress-nginx.yaml
+	# $(KUBECTL) wait --namespace ingress-nginx \
+	# 	--for=condition=ready pod \
+	# 	--selector=app.kubernetes.io/component=controller \
+	# 	--timeout=90s
 
 .PONY: kind-destroy
 kind-destroy: kind ## Destroy a kind cluster.

@@ -44,6 +44,7 @@ var (
 )
 
 const (
+	ownerKind          = "Task"
 	ownerKey           = ".metadata.controller"
 	podCreationTimeout = 10 * time.Second
 	taskTimeout        = 10 * time.Minute
@@ -404,7 +405,7 @@ func (r *TaskReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		if owner == nil {
 			return nil
 		}
-		if owner.Kind != "Task" || owner.APIVersion != apiGVStr {
+		if owner.Kind != ownerKind || owner.APIVersion != apiGVStr {
 			return nil
 		}
 		return []string{owner.Name}
@@ -418,7 +419,7 @@ func (r *TaskReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		if owner == nil {
 			return nil
 		}
-		if owner.Kind != "Task" || owner.APIVersion != apiGVStr {
+		if owner.Kind != ownerKind || owner.APIVersion != apiGVStr {
 			return nil
 		}
 		return []string{owner.Name}
