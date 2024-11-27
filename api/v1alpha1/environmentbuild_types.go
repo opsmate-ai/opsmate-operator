@@ -16,6 +16,22 @@ type EnvironmentBuildSpec struct {
 	// +kubebuilder:validation:Required
 	// Template is the execution environment definition in form of a pod template
 	Template corev1.PodTemplateSpec `json:"template,omitempty"`
+
+	// +kubebuilder:validation:Required
+	// Service is the service definition for the environment build
+	Service corev1.ServiceSpec `json:"service,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	// IngressAnnotations are the annotations for the ingress
+	IngressAnnotations map[string]string `json:"ingressAnnotations,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	// Whether to use TLS for the ingress
+	IngressTLS bool `json:"ingressTLS,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	// IngressTargetPort is the service port for the ingress to target
+	IngressTargetPort int `json:"ingressTargetPort,omitempty"`
 }
 
 // EnvironmentBuildStatus defines the observed state of EnvironmentBuild.

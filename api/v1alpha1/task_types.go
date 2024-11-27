@@ -29,6 +29,14 @@ type TaskSpec struct {
 	// Context is the execution context for the task
 	// +kubebuilder:validation:Required
 	Context string `json:"context"`
+
+	// DomainName is the domain name for the task ingress
+	// +kubebuilder:validation:Optional
+	DomainName string `json:"domainName,omitempty"`
+
+	// IngressSecretName is the name of the secret to use for the ingress TLS
+	// +kubebuilder:validation:Optional
+	IngressSecretName string `json:"ingressSecretName,omitempty"`
 }
 
 // TaskStatus defines the observed state of Task.
@@ -44,6 +52,14 @@ type TaskStatus struct {
 	// +optional
 	Pod *corev1.ObjectReference `json:"pod,omitempty"`
 
+	// Service is the reference to the service that is running the task
+	// +optional
+	Service *corev1.ObjectReference `json:"service,omitempty"`
+
+	// Ingress is the reference to the ingress that is running the task
+	// +optional
+	Ingress *corev1.ObjectReference `json:"ingress,omitempty"`
+
 	// Reason for the error
 	// +optional
 	Reason string `json:"reason,omitempty"`
@@ -55,6 +71,14 @@ type TaskStatus struct {
 	// Internal IP of the Task Pod
 	// +optional
 	InternalIP string `json:"internalIP,omitempty"`
+
+	// Cluster IP of the service
+	// +optional
+	ServiceIP string `json:"serviceIP,omitempty"`
+
+	// Ingress Domain
+	// +optional
+	IngressDomain string `json:"ingressDomain,omitempty"`
 
 	// The time when the task pod is up and running
 	// +optional
@@ -75,6 +99,8 @@ type TaskStatus struct {
 // +kubebuilder:printcolumn:name="State",type=string,JSONPath=`.status.state`
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.reason`
 // +kubebuilder:printcolumn:name="InternalIP",type=string,JSONPath=`.status.internalIP`
+// +kubebuilder:printcolumn:name="ServiceIP",type=string,JSONPath=`.status.serviceIP`
+// +kubebuilder:printcolumn:name="IngressDomain",type=string,JSONPath=`.status.ingressDomain`
 // Task is the Schema for the tasks API.
 type Task struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -103,6 +129,7 @@ const (
 
 	ConditionTaskPodRunning   = "TaskPodRunning"
 	ConditionTaskPodScheduled = "TaskPodScheduled"
+	ConditionTaskServiceUp    = "TaskServiceUp"
 )
 
 func init() {

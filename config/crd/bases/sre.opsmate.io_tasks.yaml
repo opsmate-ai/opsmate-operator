@@ -36,6 +36,12 @@ spec:
     - jsonPath: .status.internalIP
       name: InternalIP
       type: string
+    - jsonPath: .status.serviceIP
+      name: ServiceIP
+      type: string
+    - jsonPath: .status.ingressDomain
+      name: IngressDomain
+      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:
@@ -64,9 +70,16 @@ spec:
               context:
                 description: Context is the execution context for the task
                 type: string
+              domainName:
+                description: DomainName is the domain name for the task ingress
+                type: string
               environmentBuildName:
                 description: The environmentBuild that the task will use, must be
                   in the same namespace as the task
+                type: string
+              ingressSecretName:
+                description: IngressSecretName is the name of the secret to use for
+                  the ingress TLS
                 type: string
               instruction:
                 description: Instruction is the instruction for the task
@@ -145,6 +158,53 @@ spec:
                   - type
                   type: object
                 type: array
+              ingress:
+                description: Ingress is the reference to the ingress that is running
+                  the task
+                properties:
+                  apiVersion:
+                    description: API version of the referent.
+                    type: string
+                  fieldPath:
+                    description: |-
+                      If referring to a piece of an object instead of an entire object, this string
+                      should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2].
+                      For example, if the object reference is to a container within a pod, this would take on a value like:
+                      "spec.containers{name}" (where "name" refers to the name of the container that triggered
+                      the event) or if no container name is specified "spec.containers[2]" (container with
+                      index 2 in this pod). This syntax is chosen only to have some well-defined way of
+                      referencing a part of an object.
+                    type: string
+                  kind:
+                    description: |-
+                      Kind of the referent.
+                      More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+                    type: string
+                  name:
+                    description: |-
+                      Name of the referent.
+                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                    type: string
+                  namespace:
+                    description: |-
+                      Namespace of the referent.
+                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
+                    type: string
+                  resourceVersion:
+                    description: |-
+                      Specific resourceVersion to which this reference is made, if any.
+                      More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
+                    type: string
+                  uid:
+                    description: |-
+                      UID of the referent.
+                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids
+                    type: string
+                type: object
+                x-kubernetes-map-type: atomic
+              ingressDomain:
+                description: Ingress Domain
+                type: string
               internalIP:
                 description: Internal IP of the Task Pod
                 type: string
@@ -196,6 +256,53 @@ spec:
                 x-kubernetes-map-type: atomic
               reason:
                 description: Reason for the error
+                type: string
+              service:
+                description: Service is the reference to the service that is running
+                  the task
+                properties:
+                  apiVersion:
+                    description: API version of the referent.
+                    type: string
+                  fieldPath:
+                    description: |-
+                      If referring to a piece of an object instead of an entire object, this string
+                      should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2].
+                      For example, if the object reference is to a container within a pod, this would take on a value like:
+                      "spec.containers{name}" (where "name" refers to the name of the container that triggered
+                      the event) or if no container name is specified "spec.containers[2]" (container with
+                      index 2 in this pod). This syntax is chosen only to have some well-defined way of
+                      referencing a part of an object.
+                    type: string
+                  kind:
+                    description: |-
+                      Kind of the referent.
+                      More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+                    type: string
+                  name:
+                    description: |-
+                      Name of the referent.
+                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                    type: string
+                  namespace:
+                    description: |-
+                      Namespace of the referent.
+                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
+                    type: string
+                  resourceVersion:
+                    description: |-
+                      Specific resourceVersion to which this reference is made, if any.
+                      More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
+                    type: string
+                  uid:
+                    description: |-
+                      UID of the referent.
+                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids
+                    type: string
+                type: object
+                x-kubernetes-map-type: atomic
+              serviceIP:
+                description: Cluster IP of the service
                 type: string
               state:
                 default: PENDING

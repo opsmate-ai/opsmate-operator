@@ -14,7 +14,9 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - ingresses
   - pods
+  - services
   verbs:
   - create
   - delete

@@ -11,11 +11,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	srev1alpha1 "github.com/jingkaihe/opsmate-operator/api/v1alpha1"
 )
@@ -67,6 +69,20 @@ var _ = Describe("Task Controller", func() {
 					return k8sClient.Get(ctx, types.NamespacedName{Name: taskName, Namespace: namespace}, &pod) == nil
 				}
 			}
+
+			serviceExists = func(ctx context.Context, taskName string) func() bool {
+				return func() bool {
+					var service corev1.Service
+					return k8sClient.Get(ctx, types.NamespacedName{Name: taskName, Namespace: namespace}, &service) == nil
+				}
+			}
+
+			ingressExists = func(ctx context.Context, taskName string) func() bool {
+				return func() bool {
+					var ingress networkingv1.Ingress
+					return k8sClient.Get(ctx, types.NamespacedName{Name: taskName, Namespace: namespace}, &ingress) == nil
+				}
+			}
 		)
 
 		ctx := context.Background()
@@ -108,15 +124,32 @@ var _ = Describe("Task Controller", func() {
 			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: taskName, Namespace: namespace}, task)).To(Succeed())
 			var pod corev1.Pod
 			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: taskName, Namespace: namespace}, &pod)).To(Succeed())
+
+			var service corev1.Service
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: taskName, Namespace: namespace}, &service)).To(Succeed())
+
+			var ingress networkingv1.Ingress
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: taskName, Namespace: namespace}, &ingress)).To(Succeed())
+
 			Expect(task.Status.Pod.Name).To(Equal(pod.Name))
 			Expect(task.Status.Pod.Namespace).To(Equal(pod.Namespace))
 			Expect(task.Status.InternalIP).To(Equal(pod.Status.PodIP))
+			Expect(task.Status.ServiceIP).To(Equal(service.Spec.ClusterIP))
 			Expect(task.Status.AllocatedAt).NotTo(BeNil())
-			Expect(task.Status.Conditions).To(HaveLen(2))
+			Expect(task.Status.Conditions).To(HaveLen(3))
 			Expect(task.Status.Conditions[0].Type).To(Equal(srev1alpha1.ConditionTaskPodScheduled))
 			Expect(task.Status.Conditions[0].Status).To(Equal(metav1.ConditionTrue))
 			Expect(task.Status.Conditions[1].Type).To(Equal(srev1alpha1.ConditionTaskPodRunning))
 			Expect(task.Status.Conditions[1].Status).To(Equal(metav1.ConditionTrue))
+			Expect(task.Status.Conditions[2].Type).To(Equal(srev1alpha1.ConditionTaskServiceUp))
+			Expect(task.Status.Conditions[2].Status).To(Equal(metav1.ConditionTrue))
+
+			By("the service endpoint ip == pod ip")
+			var endpoint corev1.Endpoints
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: taskName, Namespace: namespace}, &endpoint)).To(Succeed())
+			Expect(endpoint.Subsets).To(HaveLen(1))
+			Expect(endpoint.Subsets[0].Addresses).To(HaveLen(1))
+			Expect(endpoint.Subsets[0].Addresses[0].IP).To(Equal(pod.Status.PodIP))
 		})
 
 		It("should remove the pod when the task is removed", func() {
@@ -134,6 +167,40 @@ var _ = Describe("Task Controller", func() {
 
 			By("the pod is eventually deleted")
 			Eventually(podExists(ctx, taskName)).WithTimeout(5 * time.Second).Should(BeFalse())
+		})
+
+		It("should remove the service when the task is removed", func() {
+			envBuild := newEnvBuild(envBuildName, namespace)
+			Expect(k8sClient.Create(ctx, envBuild)).To(Succeed())
+
+			task := newTask(taskName, namespace, envBuildName)
+			Expect(k8sClient.Create(ctx, task)).To(Succeed())
+
+			By("the service is eventually created")
+			Eventually(serviceExists(ctx, taskName)).WithTimeout(5 * time.Second).Should(BeTrue())
+
+			// remove the task
+			Expect(k8sClient.Delete(ctx, task)).To(Succeed())
+
+			By("the service is eventually deleted")
+			Eventually(serviceExists(ctx, taskName)).WithTimeout(5 * time.Second).Should(BeFalse())
+		})
+
+		It("should remove the ingress when the task is removed", func() {
+			envBuild := newEnvBuild(envBuildName, namespace)
+			Expect(k8sClient.Create(ctx, envBuild)).To(Succeed())
+
+			task := newTask(taskName, namespace, envBuildName)
+			Expect(k8sClient.Create(ctx, task)).To(Succeed())
+
+			By("the ingress is eventually created")
+			Eventually(ingressExists(ctx, taskName)).WithTimeout(5 * time.Second).Should(BeTrue())
+
+			// remove the task
+			Expect(k8sClient.Delete(ctx, task)).To(Succeed())
+
+			By("the ingress is eventually deleted")
+			Eventually(ingressExists(ctx, taskName)).WithTimeout(5 * time.Second).Should(BeFalse())
 		})
 
 		It("should remove the task when the environment build is invalid", func() {
@@ -246,6 +313,19 @@ func newEnvBuild(name, namespace string) *srev1alpha1.EnvironmentBuild {
 					}},
 				},
 			},
+			Service: corev1.ServiceSpec{
+				Ports: []corev1.ServicePort{{
+					Name:       "http",
+					Protocol:   corev1.ProtocolTCP,
+					Port:       80,
+					TargetPort: intstr.FromInt(80),
+				}},
+			},
+			IngressAnnotations: map[string]string{
+				"kubernetes.io/tls-acme": "true",
+			},
+			IngressTLS:        true,
+			IngressTargetPort: 80,
 		},
 	}
 }
@@ -260,6 +340,7 @@ func newTask(name, namespace, envBuildName string) *srev1alpha1.Task {
 			UserID:               "test-user",
 			EnvironmentBuildName: envBuildName,
 			Instruction:          "echo 'Hello, World!'",
+			DomainName:           "test-task.opsmate.hjktech.io",
 		},
 	}
 }

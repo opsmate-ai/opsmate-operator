@@ -15,6 +15,7 @@ import (
 	srev1alpha1 "github.com/jingkaihe/opsmate-operator/api/v1alpha1"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,6 +44,7 @@ var (
 )
 
 const (
+	ownerKind          = "Task"
 	ownerKey           = ".metadata.controller"
 	podCreationTimeout = 10 * time.Second
 	taskTimeout        = 10 * time.Minute
@@ -53,6 +55,8 @@ const (
 // +kubebuilder:rbac:groups=sre.opsmate.io,resources=tasks/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=sre.opsmate.io,resources=tasks/finalizers,verbs=update
 // +kubebuilder:rbac:groups="",resources=pods,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=ingresses,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
@@ -104,6 +108,12 @@ func (r *TaskReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			Reason:  "PodNotRunning",
 			Message: "Task pod is not running",
 		})
+		meta.SetStatusCondition(&task.Status.Conditions, metav1.Condition{
+			Type:    srev1alpha1.ConditionTaskServiceUp,
+			Status:  metav1.ConditionFalse,
+			Reason:  "ServiceNotUp",
+			Message: "Task service is not up",
+		})
 
 		return r.updateTaskStatus(ctx, &task)
 	}
@@ -136,44 +146,33 @@ func (r *TaskReconciler) statePending(ctx context.Context, task *srev1alpha1.Tas
 		Name:      task.Spec.EnvironmentBuildName,
 		Namespace: task.Namespace,
 	}, &envBuild); err != nil {
+		if apierrors.IsNotFound(err) {
+			return r.markTaskAsError(ctx, task, errors.Wrap(err, "environment build not found"))
+		}
 		return ctrl.Result{}, err
 	}
 
-	// construct the pod
-	podMeta := envBuild.Spec.Template.ObjectMeta
-	podMeta.Name = task.Name
-	podMeta.Namespace = task.Namespace
-	podMeta.Labels = map[string]string{
-		"userID":       task.Spec.UserID,
-		"envBuildName": task.Spec.EnvironmentBuildName,
-	}
-
-	pod := &corev1.Pod{
-		ObjectMeta: podMeta,
-		Spec:       envBuild.Spec.Template.Spec,
-	}
-
-	// prevent pod from restarting
-	pod.Spec.RestartPolicy = corev1.RestartPolicyNever
-
-	if err := ctrl.SetControllerReference(task, pod, r.Scheme); err != nil {
-		return r.markTaskAsError(ctx, task, err)
-	}
-
-	if err := r.Create(ctx, pod); err != nil {
-		if apierrors.IsAlreadyExists(err) {
-			logger.Info("pod already exists likely caused by quick subsequent reconcile")
-			return graceRequeResult, nil
-		}
+	podRef, err := r.createPod(ctx, task, &envBuild)
+	if err != nil {
+		logger.Error(err, "failed to create pod")
 		return r.markTaskAsError(ctx, task, errors.Wrap(err, "failed to create pod"))
 	}
 
-	podRef, err := reference.GetReference(r.Scheme, pod)
+	serviceRef, err := r.createService(ctx, task, &envBuild)
 	if err != nil {
-		return ctrl.Result{}, err
+		logger.Error(err, "failed to create service")
+		return r.markTaskAsError(ctx, task, errors.Wrap(err, "failed to create service"))
+	}
+
+	ingressRef, err := r.createIngress(ctx, task, &envBuild)
+	if err != nil {
+		logger.Error(err, "failed to create ingress")
+		return r.markTaskAsError(ctx, task, errors.Wrap(err, "failed to create ingress"))
 	}
 
 	task.Status.Pod = podRef
+	task.Status.Service = serviceRef
+	task.Status.Ingress = ingressRef
 	task.Status.State = srev1alpha1.StateScheduled
 
 	logger.Info("task scheduled", "pod", podRef)
@@ -184,7 +183,11 @@ func (r *TaskReconciler) statePending(ctx context.Context, task *srev1alpha1.Tas
 func (r *TaskReconciler) stateScheduled(ctx context.Context, task *srev1alpha1.Task) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	var pod corev1.Pod
+	var (
+		pod     corev1.Pod
+		service corev1.Service
+	)
+
 	if err := r.Get(ctx, types.NamespacedName{
 		Name:      task.Name,
 		Namespace: task.Namespace,
@@ -196,6 +199,23 @@ func (r *TaskReconciler) stateScheduled(ctx context.Context, task *srev1alpha1.T
 			return graceRequeResult, nil
 		}
 		return ctrl.Result{}, err
+	}
+
+	if err := r.Get(ctx, types.NamespacedName{
+		Name:      task.Name,
+		Namespace: task.Namespace,
+	}, &service); err != nil {
+		if apierrors.IsNotFound(err) {
+			if time.Now().After(task.CreationTimestamp.Add(podCreationTimeout)) {
+				return r.markTaskAsError(ctx, task, errors.New("service creation timeout"))
+			}
+			return graceRequeResult, nil
+		}
+		return ctrl.Result{}, err
+	}
+
+	if !serviceIsUp(ctx, &service) {
+		return graceRequeResult, nil
 	}
 
 	switch pod.Status.Phase {
@@ -218,7 +238,7 @@ func (r *TaskReconciler) stateScheduled(ctx context.Context, task *srev1alpha1.T
 		if !podReadyAndRunning(&pod) {
 			return graceRequeResult, nil
 		}
-		return r.markTaskAsRunning(ctx, task, &pod)
+		return r.markTaskAsRunning(ctx, task, &pod, &service)
 	case corev1.PodSucceeded:
 		return r.markTaskAsError(ctx, task, errors.New("pod completed prematurely"))
 	case corev1.PodFailed, corev1.PodUnknown:
@@ -312,7 +332,7 @@ func (r *TaskReconciler) markTaskAsError(ctx context.Context, task *srev1alpha1.
 	return r.updateTaskStatus(ctx, task)
 }
 
-func (r *TaskReconciler) markTaskAsRunning(ctx context.Context, task *srev1alpha1.Task, pod *corev1.Pod) (ctrl.Result, error) {
+func (r *TaskReconciler) markTaskAsRunning(ctx context.Context, task *srev1alpha1.Task, pod *corev1.Pod, service *corev1.Service) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
 	task.Status.State = srev1alpha1.StateRunning
@@ -324,6 +344,14 @@ func (r *TaskReconciler) markTaskAsRunning(ctx context.Context, task *srev1alpha
 	})
 
 	task.Status.AllocatedAt = &metav1.Time{Time: time.Now()}
+
+	task.Status.ServiceIP = service.Spec.ClusterIP
+	meta.SetStatusCondition(&task.Status.Conditions, metav1.Condition{
+		Type:    srev1alpha1.ConditionTaskServiceUp,
+		Status:  metav1.ConditionTrue,
+		Reason:  "ServiceUp",
+		Message: "Task service is up",
+	})
 	task.Status.InternalIP = pod.Status.PodIP
 
 	elapsed := time.Since(task.CreationTimestamp.Time)
@@ -377,6 +405,34 @@ func (r *TaskReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		if owner == nil {
 			return nil
 		}
+		if owner.Kind != ownerKind || owner.APIVersion != apiGVStr {
+			return nil
+		}
+		return []string{owner.Name}
+	}); err != nil {
+		return err
+	}
+
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &corev1.Service{}, "spec.ownerReferences", func(o client.Object) []string {
+		service := o.(*corev1.Service)
+		owner := metav1.GetControllerOf(service)
+		if owner == nil {
+			return nil
+		}
+		if owner.Kind != ownerKind || owner.APIVersion != apiGVStr {
+			return nil
+		}
+		return []string{owner.Name}
+	}); err != nil {
+		return err
+	}
+
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &networkingv1.Ingress{}, "spec.ownerReferences", func(o client.Object) []string {
+		ingress := o.(*networkingv1.Ingress)
+		owner := metav1.GetControllerOf(ingress)
+		if owner == nil {
+			return nil
+		}
 		if owner.Kind != "Task" || owner.APIVersion != apiGVStr {
 			return nil
 		}
@@ -389,6 +445,8 @@ func (r *TaskReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&srev1alpha1.Task{}).
 		Named("task").
 		Owns(&corev1.Pod{}).
+		Owns(&corev1.Service{}).
+		Owns(&networkingv1.Ingress{}).
 		Complete(r)
 }
 
@@ -405,6 +463,209 @@ func podReadyAndRunning(pod *corev1.Pod) bool {
 	return false
 }
 
+// create the pod if not exists
+func (r *TaskReconciler) createPod(ctx context.Context, task *srev1alpha1.Task, envBuild *srev1alpha1.EnvironmentBuild) (*corev1.ObjectReference, error) {
+	logger := log.FromContext(ctx)
+
+	var pod corev1.Pod
+	err := r.Get(ctx, types.NamespacedName{
+		Name:      task.Name,
+		Namespace: task.Namespace,
+	}, &pod)
+
+	if err == nil {
+		logger.Info("pod already exists", "pod", pod.Name)
+		return reference.GetReference(r.Scheme, &pod)
+	}
+
+	if !apierrors.IsNotFound(err) {
+		return nil, err
+	}
+
+	// construct the pod
+	podMeta := envBuild.Spec.Template.ObjectMeta
+	podMeta.Name = task.Name
+	podMeta.Namespace = task.Namespace
+	podMeta.Labels = map[string]string{
+		"userID":       task.Spec.UserID,
+		"envBuildName": task.Spec.EnvironmentBuildName,
+	}
+
+	pod = corev1.Pod{
+		ObjectMeta: podMeta,
+		Spec:       envBuild.Spec.Template.Spec,
+	}
+
+	// prevent pod from restarting
+	pod.Spec.RestartPolicy = corev1.RestartPolicyNever
+
+	// add the task label to the pod
+	if pod.Labels == nil {
+		pod.Labels = make(map[string]string)
+	}
+	pod.Labels["opsmate.io/task"] = task.Name
+
+	if err := ctrl.SetControllerReference(task, &pod, r.Scheme); err != nil {
+		return nil, err
+	}
+
+	if err := r.Create(ctx, &pod); err != nil {
+		if apierrors.IsAlreadyExists(err) {
+			logger.Info("pod already exists likely caused by quick subsequent reconcile")
+		} else {
+			return nil, err
+		}
+	}
+
+	podRef, err := reference.GetReference(r.Scheme, &pod)
+	if err != nil {
+		return nil, err
+	}
+
+	return podRef, nil
+}
+
+// create service if not exists
+func (r *TaskReconciler) createService(ctx context.Context, task *srev1alpha1.Task, envBuild *srev1alpha1.EnvironmentBuild) (*corev1.ObjectReference, error) {
+	logger := log.FromContext(ctx)
+
+	var service corev1.Service
+	err := r.Get(ctx, types.NamespacedName{
+		Name:      task.Name,
+		Namespace: task.Namespace,
+	}, &service)
+
+	if err == nil {
+		logger.Info("service already exists", "service", service.Name)
+		return reference.GetReference(r.Scheme, &service)
+	}
+
+	if !apierrors.IsNotFound(err) {
+		return nil, err
+	}
+
+	// construct the service
+	service = corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      task.Name,
+			Namespace: task.Namespace,
+		},
+		Spec: envBuild.Spec.Service,
+	}
+
+	// add the task label to the service
+	if service.Spec.Selector == nil {
+		service.Spec.Selector = make(map[string]string)
+	}
+	service.Spec.Selector["opsmate.io/task"] = task.Name
+
+	if err := ctrl.SetControllerReference(task, &service, r.Scheme); err != nil {
+		return nil, err
+	}
+
+	if err := r.Create(ctx, &service); err != nil {
+		if apierrors.IsAlreadyExists(err) {
+			logger.Info("service already exists likely caused by quick subsequent reconcile")
+		} else {
+			return nil, err
+		}
+	}
+
+	serviceRef, err := reference.GetReference(r.Scheme, &service)
+	if err != nil {
+		return nil, err
+	}
+
+	return serviceRef, nil
+}
+
+func (r *TaskReconciler) createIngress(ctx context.Context, task *srev1alpha1.Task, envBuild *srev1alpha1.EnvironmentBuild) (*corev1.ObjectReference, error) {
+	logger := log.FromContext(ctx)
+
+	if task.Spec.DomainName == "" {
+		logger.Info("no domain name specified, skipping ingress creation")
+		return nil, nil
+	}
+
+	var ingress networkingv1.Ingress
+	err := r.Get(ctx, types.NamespacedName{
+		Name:      task.Name,
+		Namespace: task.Namespace,
+	}, &ingress)
+
+	if err == nil {
+		logger.Info("ingress already exists", "ingress", ingress.Name)
+		return reference.GetReference(r.Scheme, &ingress)
+	}
+
+	if !apierrors.IsNotFound(err) {
+		return nil, err
+	}
+
+	prefixType := networkingv1.PathTypePrefix
+	ingress = networkingv1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        task.Name,
+			Namespace:   task.Namespace,
+			Annotations: envBuild.Spec.IngressAnnotations,
+		},
+		Spec: networkingv1.IngressSpec{
+			Rules: []networkingv1.IngressRule{
+				{
+					Host: task.Spec.DomainName,
+					IngressRuleValue: networkingv1.IngressRuleValue{
+						HTTP: &networkingv1.HTTPIngressRuleValue{
+							Paths: []networkingv1.HTTPIngressPath{
+								{
+									Path:     "/",
+									PathType: &prefixType,
+									Backend: networkingv1.IngressBackend{
+										Service: &networkingv1.IngressServiceBackend{
+											Name: task.Name,
+											Port: networkingv1.ServiceBackendPort{
+												Number: int32(envBuild.Spec.IngressTargetPort),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	if envBuild.Spec.IngressTLS {
+		ingressTLS := networkingv1.IngressTLS{
+			Hosts: []string{task.Spec.DomainName},
+		}
+		if task.Spec.IngressSecretName != "" {
+			ingressTLS.SecretName = task.Spec.IngressSecretName
+		}
+		ingress.Spec.TLS = []networkingv1.IngressTLS{ingressTLS}
+	}
+
+	if err := ctrl.SetControllerReference(task, &ingress, r.Scheme); err != nil {
+		return nil, err
+	}
+
+	if err := r.Create(ctx, &ingress); err != nil {
+		if apierrors.IsAlreadyExists(err) {
+			logger.Info("ingress already exists likely caused by quick subsequent reconcile")
+		} else {
+			return nil, err
+		}
+	}
+
+	ingressRef, err := reference.GetReference(r.Scheme, &ingress)
+	if err != nil {
+		return nil, err
+	}
+
+	return ingressRef, nil
+}
+
 func anyContainerErrors(ctx context.Context, pod *corev1.Pod) bool {
 	for _, containerStatus := range pod.Status.ContainerStatuses {
 		if containerStatus.State.Terminated != nil {
@@ -417,4 +678,8 @@ func anyContainerErrors(ctx context.Context, pod *corev1.Pod) bool {
 		}
 	}
 	return false
+}
+
+func serviceIsUp(_ context.Context, service *corev1.Service) bool {
+	return service.Spec.ClusterIP != ""
 }
