@@ -4450,6 +4450,21 @@
         "v1alpha1.EnvironmentBuildSpec": {
             "type": "object",
             "properties": {
+                "ingressAnnotations": {
+                    "description": "+kubebuilder:validation:Optional\nIngressAnnotations are the annotations for the ingress",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "ingressTLS": {
+                    "description": "+kubebuilder:validation:Optional\nWhether to use TLS for the ingress",
+                    "type": "boolean"
+                },
+                "ingressTargetPort": {
+                    "description": "+kubebuilder:validation:Optional\nIngressTargetPort is the service port for the ingress to target",
+                    "type": "integer"
+                },
                 "service": {
                     "description": "+kubebuilder:validation:Required\nService is the service definition for the environment build",
                     "allOf": [
@@ -4510,8 +4525,16 @@
                     "description": "Context is the execution context for the task\n+kubebuilder:validation:Required",
                     "type": "string"
                 },
+                "domainName": {
+                    "description": "DomainName is the domain name for the task ingress\n+kubebuilder:validation:Optional",
+                    "type": "string"
+                },
                 "environmentBuildName": {
                     "description": "The environmentBuild that the task will use, must be in the same namespace as the task\n+kubebuilder:validation:Required",
+                    "type": "string"
+                },
+                "ingressSecretName": {
+                    "description": "IngressSecretName is the name of the secret to use for the ingress TLS\n+kubebuilder:validation:Optional",
                     "type": "string"
                 },
                 "instruction": {
@@ -4545,6 +4568,10 @@
                             "$ref": "#/definitions/v1.ObjectReference"
                         }
                     ]
+                },
+                "ingressDomain": {
+                    "description": "Ingress Domain\n+optional",
+                    "type": "string"
                 },
                 "internalIP": {
                     "description": "Internal IP of the Task Pod\n+optional",

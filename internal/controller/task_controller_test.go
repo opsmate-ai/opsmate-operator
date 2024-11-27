@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -75,6 +76,13 @@ var _ = Describe("Task Controller", func() {
 					return k8sClient.Get(ctx, types.NamespacedName{Name: taskName, Namespace: namespace}, &service) == nil
 				}
 			}
+
+			ingressExists = func(ctx context.Context, taskName string) func() bool {
+				return func() bool {
+					var ingress networkingv1.Ingress
+					return k8sClient.Get(ctx, types.NamespacedName{Name: taskName, Namespace: namespace}, &ingress) == nil
+				}
+			}
 		)
 
 		ctx := context.Background()
@@ -119,6 +127,9 @@ var _ = Describe("Task Controller", func() {
 
 			var service corev1.Service
 			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: taskName, Namespace: namespace}, &service)).To(Succeed())
+
+			var ingress networkingv1.Ingress
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: taskName, Namespace: namespace}, &ingress)).To(Succeed())
 
 			Expect(task.Status.Pod.Name).To(Equal(pod.Name))
 			Expect(task.Status.Pod.Namespace).To(Equal(pod.Namespace))
@@ -173,6 +184,23 @@ var _ = Describe("Task Controller", func() {
 
 			By("the service is eventually deleted")
 			Eventually(serviceExists(ctx, taskName)).WithTimeout(5 * time.Second).Should(BeFalse())
+		})
+
+		It("should remove the ingress when the task is removed", func() {
+			envBuild := newEnvBuild(envBuildName, namespace)
+			Expect(k8sClient.Create(ctx, envBuild)).To(Succeed())
+
+			task := newTask(taskName, namespace, envBuildName)
+			Expect(k8sClient.Create(ctx, task)).To(Succeed())
+
+			By("the ingress is eventually created")
+			Eventually(ingressExists(ctx, taskName)).WithTimeout(5 * time.Second).Should(BeTrue())
+
+			// remove the task
+			Expect(k8sClient.Delete(ctx, task)).To(Succeed())
+
+			By("the ingress is eventually deleted")
+			Eventually(ingressExists(ctx, taskName)).WithTimeout(5 * time.Second).Should(BeFalse())
 		})
 
 		It("should remove the task when the environment build is invalid", func() {
@@ -293,6 +321,11 @@ func newEnvBuild(name, namespace string) *srev1alpha1.EnvironmentBuild {
 					TargetPort: intstr.FromInt(80),
 				}},
 			},
+			IngressAnnotations: map[string]string{
+				"kubernetes.io/tls-acme": "true",
+			},
+			IngressTLS:        true,
+			IngressTargetPort: 80,
 		},
 	}
 }
@@ -307,6 +340,7 @@ func newTask(name, namespace, envBuildName string) *srev1alpha1.Task {
 			UserID:               "test-user",
 			EnvironmentBuildName: envBuildName,
 			Instruction:          "echo 'Hello, World!'",
+			DomainName:           "test-task.opsmate.hjktech.io",
 		},
 	}
 }

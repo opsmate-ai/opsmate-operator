@@ -10,3 +10,4 @@ spec:
   environmentBuildName: environmentbuild-sample
   instruction: "how many cpu cores on the server"
   context: "you are on a kubernetes cluster"
+  domainName: "task-sample.opsmate.hjktech.io"

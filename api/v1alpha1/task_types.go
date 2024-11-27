@@ -29,6 +29,14 @@ type TaskSpec struct {
 	// Context is the execution context for the task
 	// +kubebuilder:validation:Required
 	Context string `json:"context"`
+
+	// DomainName is the domain name for the task ingress
+	// +kubebuilder:validation:Optional
+	DomainName string `json:"domainName,omitempty"`
+
+	// IngressSecretName is the name of the secret to use for the ingress TLS
+	// +kubebuilder:validation:Optional
+	IngressSecretName string `json:"ingressSecretName,omitempty"`
 }
 
 // TaskStatus defines the observed state of Task.
@@ -67,6 +75,10 @@ type TaskStatus struct {
 	// Cluster IP of the service
 	// +optional
 	ServiceIP string `json:"serviceIP,omitempty"`
+
+	// Ingress Domain
+	// +optional
+	IngressDomain string `json:"ingressDomain,omitempty"`
 
 	// The time when the task pod is up and running
 	// +optional

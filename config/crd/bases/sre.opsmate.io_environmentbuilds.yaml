@@ -46,6 +46,18 @@ spec:
           spec:
             description: EnvironmentBuildSpec defines the desired state of EnvironmentBuild.
             properties:
+              ingressAnnotations:
+                additionalProperties:
+                  type: string
+                description: IngressAnnotations are the annotations for the ingress
+                type: object
+              ingressTLS:
+                description: Whether to use TLS for the ingress
+                type: boolean
+              ingressTargetPort:
+                description: IngressTargetPort is the service port for the ingress
+                  to target
+                type: integer
               service:
                 description: Service is the service definition for the environment
                   build

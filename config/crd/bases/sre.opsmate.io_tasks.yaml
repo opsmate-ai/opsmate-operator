@@ -64,9 +64,16 @@ spec:
               context:
                 description: Context is the execution context for the task
                 type: string
+              domainName:
+                description: DomainName is the domain name for the task ingress
+                type: string
               environmentBuildName:
                 description: The environmentBuild that the task will use, must be
                   in the same namespace as the task
+                type: string
+              ingressSecretName:
+                description: IngressSecretName is the name of the secret to use for
+                  the ingress TLS
                 type: string
               instruction:
                 description: Instruction is the instruction for the task
@@ -189,6 +196,9 @@ spec:
                     type: string
                 type: object
                 x-kubernetes-map-type: atomic
+              ingressDomain:
+                description: Ingress Domain
+                type: string
               internalIP:
                 description: Internal IP of the Task Pod
                 type: string

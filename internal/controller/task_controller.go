@@ -15,6 +15,7 @@ import (
 	srev1alpha1 "github.com/jingkaihe/opsmate-operator/api/v1alpha1"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -54,6 +55,7 @@ const (
 // +kubebuilder:rbac:groups=sre.opsmate.io,resources=tasks/finalizers,verbs=update
 // +kubebuilder:rbac:groups="",resources=pods,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=ingresses,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
@@ -161,8 +163,15 @@ func (r *TaskReconciler) statePending(ctx context.Context, task *srev1alpha1.Tas
 		return r.markTaskAsError(ctx, task, errors.Wrap(err, "failed to create service"))
 	}
 
+	ingressRef, err := r.createIngress(ctx, task, &envBuild)
+	if err != nil {
+		logger.Error(err, "failed to create ingress")
+		return r.markTaskAsError(ctx, task, errors.Wrap(err, "failed to create ingress"))
+	}
+
 	task.Status.Pod = podRef
 	task.Status.Service = serviceRef
+	task.Status.Ingress = ingressRef
 	task.Status.State = srev1alpha1.StateScheduled
 
 	logger.Info("task scheduled", "pod", podRef)
@@ -417,11 +426,26 @@ func (r *TaskReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &networkingv1.Ingress{}, "spec.ownerReferences", func(o client.Object) []string {
+		ingress := o.(*networkingv1.Ingress)
+		owner := metav1.GetControllerOf(ingress)
+		if owner == nil {
+			return nil
+		}
+		if owner.Kind != "Task" || owner.APIVersion != apiGVStr {
+			return nil
+		}
+		return []string{owner.Name}
+	}); err != nil {
+		return err
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&srev1alpha1.Task{}).
 		Named("task").
 		Owns(&corev1.Pod{}).
 		Owns(&corev1.Service{}).
+		Owns(&networkingv1.Ingress{}).
 		Complete(r)
 }
 
@@ -552,6 +576,93 @@ func (r *TaskReconciler) createService(ctx context.Context, task *srev1alpha1.Ta
 	}
 
 	return serviceRef, nil
+}
+
+func (r *TaskReconciler) createIngress(ctx context.Context, task *srev1alpha1.Task, envBuild *srev1alpha1.EnvironmentBuild) (*corev1.ObjectReference, error) {
+	logger := log.FromContext(ctx)
+
+	if task.Spec.DomainName == "" {
+		logger.Info("no domain name specified, skipping ingress creation")
+		return nil, nil
+	}
+
+	var ingress networkingv1.Ingress
+	err := r.Get(ctx, types.NamespacedName{
+		Name:      task.Name,
+		Namespace: task.Namespace,
+	}, &ingress)
+
+	if err == nil {
+		logger.Info("ingress already exists", "ingress", ingress.Name)
+		return reference.GetReference(r.Scheme, &ingress)
+	}
+
+	if !apierrors.IsNotFound(err) {
+		return nil, err
+	}
+
+	prefixType := networkingv1.PathTypePrefix
+	ingress = networkingv1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        task.Name,
+			Namespace:   task.Namespace,
+			Annotations: envBuild.Spec.IngressAnnotations,
+		},
+		Spec: networkingv1.IngressSpec{
+			Rules: []networkingv1.IngressRule{
+				{
+					Host: task.Spec.DomainName,
+					IngressRuleValue: networkingv1.IngressRuleValue{
+						HTTP: &networkingv1.HTTPIngressRuleValue{
+							Paths: []networkingv1.HTTPIngressPath{
+								{
+									Path:     "/",
+									PathType: &prefixType,
+									Backend: networkingv1.IngressBackend{
+										Service: &networkingv1.IngressServiceBackend{
+											Name: task.Name,
+											Port: networkingv1.ServiceBackendPort{
+												Number: int32(envBuild.Spec.IngressTargetPort),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	if envBuild.Spec.IngressTLS {
+		ingressTLS := networkingv1.IngressTLS{
+			Hosts: []string{task.Spec.DomainName},
+		}
+		if task.Spec.IngressSecretName != "" {
+			ingressTLS.SecretName = task.Spec.IngressSecretName
+		}
+		ingress.Spec.TLS = []networkingv1.IngressTLS{ingressTLS}
+	}
+
+	if err := ctrl.SetControllerReference(task, &ingress, r.Scheme); err != nil {
+		return nil, err
+	}
+
+	if err := r.Create(ctx, &ingress); err != nil {
+		if apierrors.IsAlreadyExists(err) {
+			logger.Info("ingress already exists likely caused by quick subsequent reconcile")
+		} else {
+			return nil, err
+		}
+	}
+
+	ingressRef, err := reference.GetReference(r.Scheme, &ingress)
+	if err != nil {
+		return nil, err
+	}
+
+	return ingressRef, nil
 }
 
 func anyContainerErrors(ctx context.Context, pod *corev1.Pod) bool {
