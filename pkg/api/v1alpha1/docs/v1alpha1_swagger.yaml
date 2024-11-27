@@ -5507,6 +5507,11 @@ definitions:
         description: |-
           Service is the reference to the service that is running the task
           +optional
+      serviceIP:
+        description: |-
+          Cluster IP of the service
+          +optional
+        type: string
       state:
         description: |-
           +kubebuilder:validation:Enum=PENDING;SCHEDULED;RUNNING;TERMINATING;ERROR;NOT_FOUND

@@ -64,6 +64,10 @@ type TaskStatus struct {
 	// +optional
 	InternalIP string `json:"internalIP,omitempty"`
 
+	// Cluster IP of the service
+	// +optional
+	ServiceIP string `json:"serviceIP,omitempty"`
+
 	// The time when the task pod is up and running
 	// +optional
 	AllocatedAt *metav1.Time `json:"allocatedAt,omitempty"`
@@ -111,6 +115,7 @@ const (
 
 	ConditionTaskPodRunning   = "TaskPodRunning"
 	ConditionTaskPodScheduled = "TaskPodScheduled"
+	ConditionTaskServiceUp    = "TaskServiceUp"
 )
 
 func init() {

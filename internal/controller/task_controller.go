@@ -105,6 +105,12 @@ func (r *TaskReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			Reason:  "PodNotRunning",
 			Message: "Task pod is not running",
 		})
+		meta.SetStatusCondition(&task.Status.Conditions, metav1.Condition{
+			Type:    srev1alpha1.ConditionTaskServiceUp,
+			Status:  metav1.ConditionFalse,
+			Reason:  "ServiceNotUp",
+			Message: "Task service is not up",
+		})
 
 		return r.updateTaskStatus(ctx, &task)
 	}
@@ -167,7 +173,11 @@ func (r *TaskReconciler) statePending(ctx context.Context, task *srev1alpha1.Tas
 func (r *TaskReconciler) stateScheduled(ctx context.Context, task *srev1alpha1.Task) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	var pod corev1.Pod
+	var (
+		pod     corev1.Pod
+		service corev1.Service
+	)
+
 	if err := r.Get(ctx, types.NamespacedName{
 		Name:      task.Name,
 		Namespace: task.Namespace,
@@ -179,6 +189,23 @@ func (r *TaskReconciler) stateScheduled(ctx context.Context, task *srev1alpha1.T
 			return graceRequeResult, nil
 		}
 		return ctrl.Result{}, err
+	}
+
+	if err := r.Get(ctx, types.NamespacedName{
+		Name:      task.Name,
+		Namespace: task.Namespace,
+	}, &service); err != nil {
+		if apierrors.IsNotFound(err) {
+			if time.Now().After(task.CreationTimestamp.Add(podCreationTimeout)) {
+				return r.markTaskAsError(ctx, task, errors.New("service creation timeout"))
+			}
+			return graceRequeResult, nil
+		}
+		return ctrl.Result{}, err
+	}
+
+	if !serviceIsUp(ctx, &service) {
+		return graceRequeResult, nil
 	}
 
 	switch pod.Status.Phase {
@@ -201,7 +228,7 @@ func (r *TaskReconciler) stateScheduled(ctx context.Context, task *srev1alpha1.T
 		if !podReadyAndRunning(&pod) {
 			return graceRequeResult, nil
 		}
-		return r.markTaskAsRunning(ctx, task, &pod)
+		return r.markTaskAsRunning(ctx, task, &pod, &service)
 	case corev1.PodSucceeded:
 		return r.markTaskAsError(ctx, task, errors.New("pod completed prematurely"))
 	case corev1.PodFailed, corev1.PodUnknown:
@@ -295,7 +322,7 @@ func (r *TaskReconciler) markTaskAsError(ctx context.Context, task *srev1alpha1.
 	return r.updateTaskStatus(ctx, task)
 }
 
-func (r *TaskReconciler) markTaskAsRunning(ctx context.Context, task *srev1alpha1.Task, pod *corev1.Pod) (ctrl.Result, error) {
+func (r *TaskReconciler) markTaskAsRunning(ctx context.Context, task *srev1alpha1.Task, pod *corev1.Pod, service *corev1.Service) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
 	task.Status.State = srev1alpha1.StateRunning
@@ -307,6 +334,14 @@ func (r *TaskReconciler) markTaskAsRunning(ctx context.Context, task *srev1alpha
 	})
 
 	task.Status.AllocatedAt = &metav1.Time{Time: time.Now()}
+
+	task.Status.ServiceIP = service.Spec.ClusterIP
+	meta.SetStatusCondition(&task.Status.Conditions, metav1.Condition{
+		Type:    srev1alpha1.ConditionTaskServiceUp,
+		Status:  metav1.ConditionTrue,
+		Reason:  "ServiceUp",
+		Message: "Task service is up",
+	})
 	task.Status.InternalIP = pod.Status.PodIP
 
 	elapsed := time.Since(task.CreationTimestamp.Time)
@@ -357,6 +392,20 @@ func (r *TaskReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		pod := o.(*corev1.Pod)
 		owner := metav1.GetControllerOf(pod)
 
+		if owner == nil {
+			return nil
+		}
+		if owner.Kind != "Task" || owner.APIVersion != apiGVStr {
+			return nil
+		}
+		return []string{owner.Name}
+	}); err != nil {
+		return err
+	}
+
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &corev1.Service{}, "spec.ownerReferences", func(o client.Object) []string {
+		service := o.(*corev1.Service)
+		owner := metav1.GetControllerOf(service)
 		if owner == nil {
 			return nil
 		}
@@ -517,4 +566,8 @@ func anyContainerErrors(ctx context.Context, pod *corev1.Pod) bool {
 		}
 	}
 	return false
+}
+
+func serviceIsUp(_ context.Context, service *corev1.Service) bool {
+	return service.Spec.ClusterIP != ""
 }

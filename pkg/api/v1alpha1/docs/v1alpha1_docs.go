@@ -4581,6 +4581,10 @@ const docTemplatev1alpha1 = `{
                         }
                     ]
                 },
+                "serviceIP": {
+                    "description": "Cluster IP of the service\n+optional",
+                    "type": "string"
+                },
                 "state": {
                     "description": "+kubebuilder:validation:Enum=PENDING;SCHEDULED;RUNNING;TERMINATING;ERROR;NOT_FOUND\n+kubebuilder:default:=PENDING",
                     "type": "string"

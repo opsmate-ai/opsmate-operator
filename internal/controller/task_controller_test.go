@@ -68,6 +68,13 @@ var _ = Describe("Task Controller", func() {
 					return k8sClient.Get(ctx, types.NamespacedName{Name: taskName, Namespace: namespace}, &pod) == nil
 				}
 			}
+
+			serviceExists = func(ctx context.Context, taskName string) func() bool {
+				return func() bool {
+					var service corev1.Service
+					return k8sClient.Get(ctx, types.NamespacedName{Name: taskName, Namespace: namespace}, &service) == nil
+				}
+			}
 		)
 
 		ctx := context.Background()
@@ -109,15 +116,22 @@ var _ = Describe("Task Controller", func() {
 			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: taskName, Namespace: namespace}, task)).To(Succeed())
 			var pod corev1.Pod
 			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: taskName, Namespace: namespace}, &pod)).To(Succeed())
+
+			var service corev1.Service
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: taskName, Namespace: namespace}, &service)).To(Succeed())
+
 			Expect(task.Status.Pod.Name).To(Equal(pod.Name))
 			Expect(task.Status.Pod.Namespace).To(Equal(pod.Namespace))
 			Expect(task.Status.InternalIP).To(Equal(pod.Status.PodIP))
+			Expect(task.Status.ServiceIP).To(Equal(service.Spec.ClusterIP))
 			Expect(task.Status.AllocatedAt).NotTo(BeNil())
-			Expect(task.Status.Conditions).To(HaveLen(2))
+			Expect(task.Status.Conditions).To(HaveLen(3))
 			Expect(task.Status.Conditions[0].Type).To(Equal(srev1alpha1.ConditionTaskPodScheduled))
 			Expect(task.Status.Conditions[0].Status).To(Equal(metav1.ConditionTrue))
 			Expect(task.Status.Conditions[1].Type).To(Equal(srev1alpha1.ConditionTaskPodRunning))
 			Expect(task.Status.Conditions[1].Status).To(Equal(metav1.ConditionTrue))
+			Expect(task.Status.Conditions[2].Type).To(Equal(srev1alpha1.ConditionTaskServiceUp))
+			Expect(task.Status.Conditions[2].Status).To(Equal(metav1.ConditionTrue))
 		})
 
 		It("should remove the pod when the task is removed", func() {
@@ -135,6 +149,23 @@ var _ = Describe("Task Controller", func() {
 
 			By("the pod is eventually deleted")
 			Eventually(podExists(ctx, taskName)).WithTimeout(5 * time.Second).Should(BeFalse())
+		})
+
+		It("should remove the service when the task is removed", func() {
+			envBuild := newEnvBuild(envBuildName, namespace)
+			Expect(k8sClient.Create(ctx, envBuild)).To(Succeed())
+
+			task := newTask(taskName, namespace, envBuildName)
+			Expect(k8sClient.Create(ctx, task)).To(Succeed())
+
+			By("the service is eventually created")
+			Eventually(serviceExists(ctx, taskName)).WithTimeout(5 * time.Second).Should(BeTrue())
+
+			// remove the task
+			Expect(k8sClient.Delete(ctx, task)).To(Succeed())
+
+			By("the service is eventually deleted")
+			Eventually(serviceExists(ctx, taskName)).WithTimeout(5 * time.Second).Should(BeFalse())
 		})
 
 		It("should remove the task when the environment build is invalid", func() {
