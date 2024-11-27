@@ -132,6 +132,13 @@ var _ = Describe("Task Controller", func() {
 			Expect(task.Status.Conditions[1].Status).To(Equal(metav1.ConditionTrue))
 			Expect(task.Status.Conditions[2].Type).To(Equal(srev1alpha1.ConditionTaskServiceUp))
 			Expect(task.Status.Conditions[2].Status).To(Equal(metav1.ConditionTrue))
+
+			By("the service endpoint ip == pod ip")
+			var endpoint corev1.Endpoints
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: taskName, Namespace: namespace}, &endpoint)).To(Succeed())
+			Expect(endpoint.Subsets).To(HaveLen(1))
+			Expect(endpoint.Subsets[0].Addresses).To(HaveLen(1))
+			Expect(endpoint.Subsets[0].Addresses[0].IP).To(Equal(pod.Status.PodIP))
 		})
 
 		It("should remove the pod when the task is removed", func() {
