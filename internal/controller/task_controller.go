@@ -53,6 +53,7 @@ const (
 // +kubebuilder:rbac:groups=sre.opsmate.io,resources=tasks/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=sre.opsmate.io,resources=tasks/finalizers,verbs=update
 // +kubebuilder:rbac:groups="",resources=pods,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
@@ -136,44 +137,26 @@ func (r *TaskReconciler) statePending(ctx context.Context, task *srev1alpha1.Tas
 		Name:      task.Spec.EnvironmentBuildName,
 		Namespace: task.Namespace,
 	}, &envBuild); err != nil {
+		if apierrors.IsNotFound(err) {
+			return r.markTaskAsError(ctx, task, errors.Wrap(err, "environment build not found"))
+		}
 		return ctrl.Result{}, err
 	}
 
-	// construct the pod
-	podMeta := envBuild.Spec.Template.ObjectMeta
-	podMeta.Name = task.Name
-	podMeta.Namespace = task.Namespace
-	podMeta.Labels = map[string]string{
-		"userID":       task.Spec.UserID,
-		"envBuildName": task.Spec.EnvironmentBuildName,
-	}
-
-	pod := &corev1.Pod{
-		ObjectMeta: podMeta,
-		Spec:       envBuild.Spec.Template.Spec,
-	}
-
-	// prevent pod from restarting
-	pod.Spec.RestartPolicy = corev1.RestartPolicyNever
-
-	if err := ctrl.SetControllerReference(task, pod, r.Scheme); err != nil {
-		return r.markTaskAsError(ctx, task, err)
-	}
-
-	if err := r.Create(ctx, pod); err != nil {
-		if apierrors.IsAlreadyExists(err) {
-			logger.Info("pod already exists likely caused by quick subsequent reconcile")
-			return graceRequeResult, nil
-		}
+	podRef, err := r.createPod(ctx, task, &envBuild)
+	if err != nil {
+		logger.Error(err, "failed to create pod")
 		return r.markTaskAsError(ctx, task, errors.Wrap(err, "failed to create pod"))
 	}
 
-	podRef, err := reference.GetReference(r.Scheme, pod)
+	serviceRef, err := r.createService(ctx, task, &envBuild)
 	if err != nil {
-		return ctrl.Result{}, err
+		logger.Error(err, "failed to create service")
+		return r.markTaskAsError(ctx, task, errors.Wrap(err, "failed to create service"))
 	}
 
 	task.Status.Pod = podRef
+	task.Status.Service = serviceRef
 	task.Status.State = srev1alpha1.StateScheduled
 
 	logger.Info("task scheduled", "pod", podRef)
@@ -403,6 +386,122 @@ func podReadyAndRunning(pod *corev1.Pod) bool {
 		}
 	}
 	return false
+}
+
+// create the pod if not exists
+func (r *TaskReconciler) createPod(ctx context.Context, task *srev1alpha1.Task, envBuild *srev1alpha1.EnvironmentBuild) (*corev1.ObjectReference, error) {
+	logger := log.FromContext(ctx)
+
+	var pod corev1.Pod
+	err := r.Get(ctx, types.NamespacedName{
+		Name:      task.Name,
+		Namespace: task.Namespace,
+	}, &pod)
+
+	if err == nil {
+		logger.Info("pod already exists", "pod", pod.Name)
+		return reference.GetReference(r.Scheme, &pod)
+	}
+
+	if !apierrors.IsNotFound(err) {
+		return nil, err
+	}
+
+	// construct the pod
+	podMeta := envBuild.Spec.Template.ObjectMeta
+	podMeta.Name = task.Name
+	podMeta.Namespace = task.Namespace
+	podMeta.Labels = map[string]string{
+		"userID":       task.Spec.UserID,
+		"envBuildName": task.Spec.EnvironmentBuildName,
+	}
+
+	pod = corev1.Pod{
+		ObjectMeta: podMeta,
+		Spec:       envBuild.Spec.Template.Spec,
+	}
+
+	// prevent pod from restarting
+	pod.Spec.RestartPolicy = corev1.RestartPolicyNever
+
+	// add the task label to the pod
+	if pod.Labels == nil {
+		pod.Labels = make(map[string]string)
+	}
+	pod.Labels["opsmate.io/task"] = task.Name
+
+	if err := ctrl.SetControllerReference(task, &pod, r.Scheme); err != nil {
+		return nil, err
+	}
+
+	if err := r.Create(ctx, &pod); err != nil {
+		if apierrors.IsAlreadyExists(err) {
+			logger.Info("pod already exists likely caused by quick subsequent reconcile")
+		} else {
+			return nil, err
+		}
+	}
+
+	podRef, err := reference.GetReference(r.Scheme, &pod)
+	if err != nil {
+		return nil, err
+	}
+
+	return podRef, nil
+}
+
+// create service if not exists
+func (r *TaskReconciler) createService(ctx context.Context, task *srev1alpha1.Task, envBuild *srev1alpha1.EnvironmentBuild) (*corev1.ObjectReference, error) {
+	logger := log.FromContext(ctx)
+
+	var service corev1.Service
+	err := r.Get(ctx, types.NamespacedName{
+		Name:      task.Name,
+		Namespace: task.Namespace,
+	}, &service)
+
+	if err == nil {
+		logger.Info("service already exists", "service", service.Name)
+		return reference.GetReference(r.Scheme, &service)
+	}
+
+	if !apierrors.IsNotFound(err) {
+		return nil, err
+	}
+
+	// construct the service
+	service = corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      task.Name,
+			Namespace: task.Namespace,
+		},
+		Spec: envBuild.Spec.Service,
+	}
+
+	// add the task label to the service
+	if service.Spec.Selector == nil {
+		service.Spec.Selector = make(map[string]string)
+	}
+	service.Spec.Selector["opsmate.io/task"] = task.Name
+
+	if err := ctrl.SetControllerReference(task, &service, r.Scheme); err != nil {
+		return nil, err
+	}
+
+	if err := r.Create(ctx, &service); err != nil {
+		if apierrors.IsAlreadyExists(err) {
+			logger.Info("service already exists likely caused by quick subsequent reconcile")
+		} else {
+			return nil, err
+		}
+	}
+
+	serviceRef, err := reference.GetReference(r.Scheme, &service)
+	if err != nil {
+		return nil, err
+	}
+
+	return serviceRef, nil
 }
 
 func anyContainerErrors(ctx context.Context, pod *corev1.Pod) bool {

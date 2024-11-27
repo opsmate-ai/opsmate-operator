@@ -44,6 +44,14 @@ type TaskStatus struct {
 	// +optional
 	Pod *corev1.ObjectReference `json:"pod,omitempty"`
 
+	// Service is the reference to the service that is running the task
+	// +optional
+	Service *corev1.ObjectReference `json:"service,omitempty"`
+
+	// Ingress is the reference to the ingress that is running the task
+	// +optional
+	Ingress *corev1.ObjectReference `json:"ingress,omitempty"`
+
 	// Reason for the error
 	// +optional
 	Reason string `json:"reason,omitempty"`

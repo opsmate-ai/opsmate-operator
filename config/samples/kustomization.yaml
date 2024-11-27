@@ -2,4 +2,5 @@
 resources:
 - sre_v1alpha1_environmentbuild.yaml
 - sre_v1alpha1_task.yaml
+- secrets.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples

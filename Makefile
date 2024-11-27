@@ -2,7 +2,7 @@
 IMG ?= controller:latest
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.31.0
-KIND_VERSION ?= v0.23.0
+KIND_VERSION ?= v0.25.0
 SWAG ?= $(LOCALBIN)/swag
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
@@ -63,7 +63,7 @@ vet: ## Run go vet against code.
 
 .PHONY: ensure-kind-cluster
 ensure-kind-cluster:
-	@if ! kind get clusters | grep -q 'opsmate-cluster'; then \
+	@if ! kind get clusters | grep -q 'kind'; then \
 		echo "No Kind cluster is running. Please start a Kind cluster before running the tests."; \
 		exit 1; \
 	else \
@@ -82,7 +82,7 @@ test: ensure-kind-cluster manifests generate install fmt vet envtest ## Run test
 # - PROMETHEUS_INSTALL_SKIP=true
 # - CERT_MANAGER_INSTALL_SKIP=true
 .PHONY: test-e2e
-test-e2e: manifests generate fmt vet ## Run the e2e tests. Expected an isolated environment using Kind.
+test-e2e: kind-destroy kind-cluster manifests generate fmt vet ## Run the e2e tests. Expected an isolated environment using Kind.
 	@command -v kind >/dev/null 2>&1 || { \
 		echo "Kind is not installed. Please install Kind manually."; \
 		exit 1; \
@@ -211,11 +211,11 @@ $(KIND): $(LOCALBIN)
 
 .PONY: kind-cluster
 kind-cluster: kind ## Create a kind cluster.
-	$(KIND) create cluster --name opsmate-cluster
+	$(KIND) create cluster --name kind
 
 .PONY: kind-destroy
 kind-destroy: kind ## Destroy a kind cluster.
-	$(KIND) delete cluster --name opsmate-cluster
+	$(KIND) delete cluster --name kind
 
 
 .PHONY: swag-gen

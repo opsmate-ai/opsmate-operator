@@ -6,4 +6,13 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: environmentbuild-sample
 spec:
-  # TODO(user): Add fields here
+  template:
+    spec:
+      containers:
+        - name: opsmate
+          image: europe-west1-docker.pkg.dev/hjktech-metal/opsmate-images/opsmate:0.1.2.alpha3
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - secretRef:
+                name: opsmate-secret

@@ -16,6 +16,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	srev1alpha1 "github.com/jingkaihe/opsmate-operator/api/v1alpha1"
 )
@@ -245,6 +246,14 @@ func newEnvBuild(name, namespace string) *srev1alpha1.EnvironmentBuild {
 						Command: []string{"sleep", "infinity"},
 					}},
 				},
+			},
+			Service: corev1.ServiceSpec{
+				Ports: []corev1.ServicePort{{
+					Name:       "http",
+					Protocol:   corev1.ProtocolTCP,
+					Port:       80,
+					TargetPort: intstr.FromInt(80),
+				}},
 			},
 		},
 	}

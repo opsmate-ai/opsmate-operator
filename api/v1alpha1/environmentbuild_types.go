@@ -16,6 +16,10 @@ type EnvironmentBuildSpec struct {
 	// +kubebuilder:validation:Required
 	// Template is the execution environment definition in form of a pod template
 	Template corev1.PodTemplateSpec `json:"template,omitempty"`
+
+	// +kubebuilder:validation:Required
+	// Service is the service definition for the environment build
+	Service corev1.ServiceSpec `json:"service,omitempty"`
 }
 
 // EnvironmentBuildStatus defines the observed state of EnvironmentBuild.
