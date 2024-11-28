@@ -22,9 +22,9 @@ type TaskSpec struct {
 	// +kubebuilder:validation:Required
 	EnvironmentBuildName string `json:"environmentBuildName"`
 
-	// Instruction is the instruction for the task
-	// +kubebuilder:validation:Required
-	Instruction string `json:"instruction,omitempty"`
+	// Description is the description for the task
+	// +kubebuilder:validation:Optional
+	Description string `json:"description,omitempty"`
 
 	// Context is the execution context for the task
 	// +kubebuilder:validation:Required
@@ -94,7 +94,6 @@ type TaskStatus struct {
 
 // +kubebuilder:printcolumn:name="UserID",type=string,JSONPath=`.spec.userID`
 // +kubebuilder:printcolumn:name="EnvironmentBuild",type=string,JSONPath=`.spec.environmentBuildName`
-// +kubebuilder:printcolumn:name="Instruction",type=string,JSONPath=`.spec.instruction`
 // +kubebuilder:printcolumn:name="Output",type=string,JSONPath=`.status.output`
 // +kubebuilder:printcolumn:name="State",type=string,JSONPath=`.status.state`
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.reason`
@@ -130,6 +129,7 @@ const (
 	ConditionTaskPodRunning   = "TaskPodRunning"
 	ConditionTaskPodScheduled = "TaskPodScheduled"
 	ConditionTaskServiceUp    = "TaskServiceUp"
+	ConditionTaskIngressReady = "IngressReady"
 )
 
 func init() {

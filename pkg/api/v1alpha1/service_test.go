@@ -62,7 +62,7 @@ var _ = Describe("Service", func() {
 			Spec: srev1alpha1.TaskSpec{
 				UserID:               "anonymous",
 				EnvironmentBuildName: envBuild.Name,
-				Instruction:          "say hi",
+				Description:          "say hi",
 				Context:              "hello",
 			},
 			Status: srev1alpha1.TaskStatus{
@@ -341,7 +341,7 @@ var _ = Describe("Service", func() {
 				Spec: srev1alpha1.TaskSpec{
 					UserID:               "anonymous",
 					EnvironmentBuildName: "test-env-build",
-					Instruction:          "say hi",
+					Description:          "say hi",
 					Context:              "hello",
 				},
 			}
@@ -390,7 +390,7 @@ var _ = Describe("Service", func() {
 				Spec: srev1alpha1.TaskSpec{
 					UserID:               "anonymous",
 					EnvironmentBuildName: "test-env-build",
-					Instruction:          "say hi",
+					Description:          "say hi",
 					Context:              "hello",
 				},
 			}

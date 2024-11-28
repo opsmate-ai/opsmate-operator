@@ -44,11 +44,11 @@ var (
 )
 
 const (
-	ownerKind          = "Task"
-	ownerKey           = ".metadata.controller"
-	podCreationTimeout = 10 * time.Second
-	taskTimeout        = 10 * time.Minute
-	syncPeriod         = 10 * time.Minute
+	ownerKind                = "Task"
+	ownerKey                 = ".metadata.controller"
+	resourceProvisionTimeout = 10 * time.Second
+	taskTimeout              = 10 * time.Minute
+	syncPeriod               = 10 * time.Minute
 )
 
 // +kubebuilder:rbac:groups=sre.opsmate.io,resources=tasks,verbs=get;list;watch;create;update;patch;delete
@@ -88,7 +88,6 @@ func (r *TaskReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		"task", task.Name,
 		"userID", task.Spec.UserID,
 		"environmentBuildName", task.Spec.EnvironmentBuildName,
-		"instruction", task.Spec.Instruction,
 		"context", task.Spec.Context,
 	)
 	ctx = log.IntoContext(ctx, logger)
@@ -113,6 +112,12 @@ func (r *TaskReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			Status:  metav1.ConditionFalse,
 			Reason:  "ServiceNotUp",
 			Message: "Task service is not up",
+		})
+		meta.SetStatusCondition(&task.Status.Conditions, metav1.Condition{
+			Type:    srev1alpha1.ConditionTaskIngressReady,
+			Status:  metav1.ConditionFalse,
+			Reason:  "IngressNotReady",
+			Message: "Task ingress is not ready",
 		})
 
 		return r.updateTaskStatus(ctx, &task)
@@ -193,7 +198,7 @@ func (r *TaskReconciler) stateScheduled(ctx context.Context, task *srev1alpha1.T
 		Namespace: task.Namespace,
 	}, &pod); err != nil {
 		if apierrors.IsNotFound(err) {
-			if time.Now().After(task.CreationTimestamp.Add(podCreationTimeout)) {
+			if time.Now().After(task.CreationTimestamp.Add(resourceProvisionTimeout)) {
 				return r.markTaskAsError(ctx, task, errors.New("pod creation timeout"))
 			}
 			return graceRequeResult, nil
@@ -206,7 +211,7 @@ func (r *TaskReconciler) stateScheduled(ctx context.Context, task *srev1alpha1.T
 		Namespace: task.Namespace,
 	}, &service); err != nil {
 		if apierrors.IsNotFound(err) {
-			if time.Now().After(task.CreationTimestamp.Add(podCreationTimeout)) {
+			if time.Now().After(task.CreationTimestamp.Add(resourceProvisionTimeout)) {
 				return r.markTaskAsError(ctx, task, errors.New("service creation timeout"))
 			}
 			return graceRequeResult, nil
@@ -216,6 +221,20 @@ func (r *TaskReconciler) stateScheduled(ctx context.Context, task *srev1alpha1.T
 
 	if !serviceIsUp(ctx, &service) {
 		return graceRequeResult, nil
+	}
+
+	var ingress networkingv1.Ingress
+	if err := r.Get(ctx, types.NamespacedName{
+		Name:      task.Name,
+		Namespace: task.Namespace,
+	}, &ingress); err != nil {
+		if apierrors.IsNotFound(err) {
+			if time.Now().After(task.CreationTimestamp.Add(resourceProvisionTimeout)) {
+				return r.markTaskAsError(ctx, task, errors.New("ingress creation timeout"))
+			}
+			return graceRequeResult, nil
+		}
+		return ctrl.Result{}, err
 	}
 
 	switch pod.Status.Phase {
@@ -238,7 +257,7 @@ func (r *TaskReconciler) stateScheduled(ctx context.Context, task *srev1alpha1.T
 		if !podReadyAndRunning(&pod) {
 			return graceRequeResult, nil
 		}
-		return r.markTaskAsRunning(ctx, task, &pod, &service)
+		return r.markTaskAsRunning(ctx, task, &pod, &service, &ingress)
 	case corev1.PodSucceeded:
 		return r.markTaskAsError(ctx, task, errors.New("pod completed prematurely"))
 	case corev1.PodFailed, corev1.PodUnknown:
@@ -332,7 +351,13 @@ func (r *TaskReconciler) markTaskAsError(ctx context.Context, task *srev1alpha1.
 	return r.updateTaskStatus(ctx, task)
 }
 
-func (r *TaskReconciler) markTaskAsRunning(ctx context.Context, task *srev1alpha1.Task, pod *corev1.Pod, service *corev1.Service) (ctrl.Result, error) {
+func (r *TaskReconciler) markTaskAsRunning(
+	ctx context.Context,
+	task *srev1alpha1.Task,
+	pod *corev1.Pod,
+	service *corev1.Service,
+	ingress *networkingv1.Ingress,
+) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
 	task.Status.State = srev1alpha1.StateRunning
@@ -354,11 +379,20 @@ func (r *TaskReconciler) markTaskAsRunning(ctx context.Context, task *srev1alpha
 	})
 	task.Status.InternalIP = pod.Status.PodIP
 
+	meta.SetStatusCondition(&task.Status.Conditions, metav1.Condition{
+		Type:    srev1alpha1.ConditionTaskIngressReady,
+		Status:  metav1.ConditionTrue,
+		Reason:  "IngressReady",
+		Message: "Task ingress is ready",
+	})
+
 	elapsed := time.Since(task.CreationTimestamp.Time)
 
 	logger.Info("task is running",
 		"internalIP", pod.Status.PodIP,
 		"podName", pod.Name,
+		"serviceName", service.Name,
+		"ingressName", ingress.Name,
 		"state", task.Status.State,
 		"elapsed", elapsed.Seconds(),
 	)

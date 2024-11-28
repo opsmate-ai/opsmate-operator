@@ -21,9 +21,6 @@ spec:
     - jsonPath: .spec.environmentBuildName
       name: EnvironmentBuild
       type: string
-    - jsonPath: .spec.instruction
-      name: Instruction
-      type: string
     - jsonPath: .status.output
       name: Output
       type: string
@@ -70,6 +67,9 @@ spec:
               context:
                 description: Context is the execution context for the task
                 type: string
+              description:
+                description: Description is the description for the task
+                type: string
               domainName:
                 description: DomainName is the domain name for the task ingress
                 type: string
@@ -81,9 +81,6 @@ spec:
                 description: IngressSecretName is the name of the secret to use for
                   the ingress TLS
                 type: string
-              instruction:
-                description: Instruction is the instruction for the task
-                type: string
               userID:
                 default: anonymous
                 description: The user ID that initiated the Task
@@ -91,7 +88,6 @@ spec:
             required:
             - context
             - environmentBuildName
-            - instruction
             - userID
             type: object
           status:

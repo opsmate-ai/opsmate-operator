@@ -5460,6 +5460,11 @@ definitions:
           Context is the execution context for the task
           +kubebuilder:validation:Required
         type: string
+      description:
+        description: |-
+          Description is the description for the task
+          +kubebuilder:validation:Optional
+        type: string
       domainName:
         description: |-
           DomainName is the domain name for the task ingress
@@ -5474,11 +5479,6 @@ definitions:
         description: |-
           IngressSecretName is the name of the secret to use for the ingress TLS
           +kubebuilder:validation:Optional
-        type: string
-      instruction:
-        description: |-
-          Instruction is the instruction for the task
-          +kubebuilder:validation:Required
         type: string
       userID:
         description: |-

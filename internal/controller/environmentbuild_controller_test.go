@@ -74,7 +74,7 @@ var _ = Describe("EnvironmentBuild Controller", func() {
 				},
 				Spec: srev1alpha1.TaskSpec{
 					EnvironmentBuildName: resourceName,
-					Instruction:          "echo hello",
+					Description:          "echo hello",
 					Context:              "test",
 				},
 			}

@@ -4532,6 +4532,10 @@ const docTemplatev1alpha1 = `{
                     "description": "Context is the execution context for the task\n+kubebuilder:validation:Required",
                     "type": "string"
                 },
+                "description": {
+                    "description": "Description is the description for the task\n+kubebuilder:validation:Optional",
+                    "type": "string"
+                },
                 "domainName": {
                     "description": "DomainName is the domain name for the task ingress\n+kubebuilder:validation:Optional",
                     "type": "string"
@@ -4542,10 +4546,6 @@ const docTemplatev1alpha1 = `{
                 },
                 "ingressSecretName": {
                     "description": "IngressSecretName is the name of the secret to use for the ingress TLS\n+kubebuilder:validation:Optional",
-                    "type": "string"
-                },
-                "instruction": {
-                    "description": "Instruction is the instruction for the task\n+kubebuilder:validation:Required",
                     "type": "string"
                 },
                 "userID": {

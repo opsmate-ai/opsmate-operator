@@ -136,13 +136,15 @@ var _ = Describe("Task Controller", func() {
 			Expect(task.Status.InternalIP).To(Equal(pod.Status.PodIP))
 			Expect(task.Status.ServiceIP).To(Equal(service.Spec.ClusterIP))
 			Expect(task.Status.AllocatedAt).NotTo(BeNil())
-			Expect(task.Status.Conditions).To(HaveLen(3))
+			Expect(task.Status.Conditions).To(HaveLen(4))
 			Expect(task.Status.Conditions[0].Type).To(Equal(srev1alpha1.ConditionTaskPodScheduled))
 			Expect(task.Status.Conditions[0].Status).To(Equal(metav1.ConditionTrue))
 			Expect(task.Status.Conditions[1].Type).To(Equal(srev1alpha1.ConditionTaskPodRunning))
 			Expect(task.Status.Conditions[1].Status).To(Equal(metav1.ConditionTrue))
 			Expect(task.Status.Conditions[2].Type).To(Equal(srev1alpha1.ConditionTaskServiceUp))
 			Expect(task.Status.Conditions[2].Status).To(Equal(metav1.ConditionTrue))
+			Expect(task.Status.Conditions[3].Type).To(Equal(srev1alpha1.ConditionTaskIngressReady))
+			Expect(task.Status.Conditions[3].Status).To(Equal(metav1.ConditionTrue))
 
 			By("the service endpoint ip == pod ip")
 			var endpoint corev1.Endpoints
@@ -339,7 +341,7 @@ func newTask(name, namespace, envBuildName string) *srev1alpha1.Task {
 		Spec: srev1alpha1.TaskSpec{
 			UserID:               "test-user",
 			EnvironmentBuildName: envBuildName,
-			Instruction:          "echo 'Hello, World!'",
+			Description:          "echo 'Hello, World!'",
 			DomainName:           "test-task.opsmate.hjktech.io",
 		},
 	}
