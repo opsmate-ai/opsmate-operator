@@ -27,3 +27,4 @@ go.work
 *~
 
 config/samples/secrets.yaml
+dist/
