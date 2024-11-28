@@ -1,15 +1,7 @@
 name: Lint
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
-
-# XXX: test out gcp auth to be removed
-permissions:
-  contents: read
-  id-token: write
 
 jobs:
   lint:
@@ -18,19 +10,6 @@ jobs:
     steps:
       - name: Clone the code
         uses: actions/checkout@v4
-      # XXX: test out gcp auth to be removed
-      - id: auth
-        name: Authenticate to GCP
-        uses: 'google-github-actions/auth@v2'
-        with:
-          create_credentials_file: 'true'
-          workload_identity_provider: projects/327242297693/locations/global/workloadIdentityPools/opsmate-github-actions/providers/opsmate-operator-github-actions
-          service_account: opsmate-github-actions@hjktech-metal.iam.gserviceaccount.com
-      - name: docker login
-        run: |
-          gcloud auth login --brief --cred-file="${{ steps.auth.outputs.credentials_file_path }}"
-          gcloud auth configure-docker europe-west1-docker.pkg.dev
-
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
