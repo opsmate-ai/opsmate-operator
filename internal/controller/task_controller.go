@@ -517,19 +517,19 @@ func (r *TaskReconciler) createPod(ctx context.Context, task *srev1alpha1.Task, 
 	}
 
 	// construct the pod
-	podMeta := envBuild.Spec.Template.ObjectMeta
+	podMeta := envBuild.Spec.PodTemplate.ObjectMeta
 	podMeta.Name = task.Name
 	podMeta.Namespace = task.Namespace
 	podMeta.Labels = map[string]string{
 		"userID":       task.Spec.UserID,
 		"envBuildName": task.Spec.EnvironmentBuildName,
 	}
+	podMeta.Annotations = envBuild.Spec.PodAnnotations
 
 	pod = corev1.Pod{
 		ObjectMeta: podMeta,
-		Spec:       envBuild.Spec.Template.Spec,
+		Spec:       envBuild.Spec.PodTemplate.Spec,
 	}
-
 	// prevent pod from restarting
 	pod.Spec.RestartPolicy = corev1.RestartPolicyNever
 

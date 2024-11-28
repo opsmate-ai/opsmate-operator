@@ -4472,19 +4472,26 @@ const docTemplatev1alpha1 = `{
                     "description": "+kubebuilder:validation:Optional\nIngressTargetPort is the service port for the ingress to target",
                     "type": "integer"
                 },
+                "podAnnotations": {
+                    "description": "+kubebuilder:validation:Optional\nPodAnnotations are the annotations for the pod",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "podTemplate": {
+                    "description": "+kubebuilder:validation:Required\nPodTemplate is the execution environment definition in form of a pod template",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1.PodTemplateSpec"
+                        }
+                    ]
+                },
                 "service": {
                     "description": "+kubebuilder:validation:Required\nService is the service definition for the environment build",
                     "allOf": [
                         {
                             "$ref": "#/definitions/v1.ServiceSpec"
-                        }
-                    ]
-                },
-                "template": {
-                    "description": "+kubebuilder:validation:Required\nTemplate is the execution environment definition in form of a pod template",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/v1.PodTemplateSpec"
                         }
                     ]
                 }

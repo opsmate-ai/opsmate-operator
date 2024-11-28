@@ -5405,18 +5405,25 @@ definitions:
           +kubebuilder:validation:Optional
           IngressTargetPort is the service port for the ingress to target
         type: integer
+      podAnnotations:
+        additionalProperties:
+          type: string
+        description: |-
+          +kubebuilder:validation:Optional
+          PodAnnotations are the annotations for the pod
+        type: object
+      podTemplate:
+        allOf:
+        - $ref: '#/definitions/v1.PodTemplateSpec'
+        description: |-
+          +kubebuilder:validation:Required
+          PodTemplate is the execution environment definition in form of a pod template
       service:
         allOf:
         - $ref: '#/definitions/v1.ServiceSpec'
         description: |-
           +kubebuilder:validation:Required
           Service is the service definition for the environment build
-      template:
-        allOf:
-        - $ref: '#/definitions/v1.PodTemplateSpec'
-        description: |-
-          +kubebuilder:validation:Required
-          Template is the execution environment definition in form of a pod template
     type: object
   v1alpha1.EnvironmentBuildStatus:
     properties:

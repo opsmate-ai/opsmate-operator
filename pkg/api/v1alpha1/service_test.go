@@ -41,7 +41,7 @@ var _ = Describe("Service", func() {
 				Namespace: "default",
 			},
 			Spec: srev1alpha1.EnvironmentBuildSpec{
-				Template: corev1.PodTemplateSpec{
+				PodTemplate: corev1.PodTemplateSpec{
 					Spec: corev1.PodSpec{
 						Containers: []corev1.Container{
 							{
@@ -162,7 +162,7 @@ var _ = Describe("Service", func() {
 					Namespace: "default",
 				},
 				Spec: srev1alpha1.EnvironmentBuildSpec{
-					Template: corev1.PodTemplateSpec{
+					PodTemplate: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
 								{
@@ -220,7 +220,7 @@ var _ = Describe("Service", func() {
 					Namespace: "default",
 				},
 				Spec: srev1alpha1.EnvironmentBuildSpec{
-					Template: corev1.PodTemplateSpec{
+					PodTemplate: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
 								{
@@ -253,7 +253,7 @@ var _ = Describe("Service", func() {
 					Namespace: "default",
 				},
 				Spec: srev1alpha1.EnvironmentBuildSpec{
-					Template: corev1.PodTemplateSpec{
+					PodTemplate: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
 								{
