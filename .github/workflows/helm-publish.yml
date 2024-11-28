@@ -1,0 +1,22 @@
+name: Helm Chart Publish
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  helm-publish:
+    name: Run on Ubuntu
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '~1.22'
+      - name: helm-lint
+        run: make helm-lint
+      - name: helm-push
+        run: make helm-push

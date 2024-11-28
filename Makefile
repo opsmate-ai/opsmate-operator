@@ -1,9 +1,15 @@
-# Image URL to use all building/pushing image targets
-IMG ?= controller:latest
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.31.0
 KIND_VERSION ?= v0.25.0
 SWAG ?= $(LOCALBIN)/swag
+IMG_NAME ?= europe-west1-docker.pkg.dev/hjktech-metal/opsmate-images/opsmate-controller-manager
+IMG_TAG ?= $(shell cat VERSION.txt)
+CHART_NAME ?= opsmate-operator
+# VERSION without the patch version
+CHART_VERSION = $(shell cat VERSION.txt | awk -F'.' '{print $$1"."$$2"."$$3}')
+CHART_REPO ?= oci://europe-west1-docker.pkg.dev/hjktech-metal/opsmate-images/${CHART_NAME}
+# Image URL to use all building/pushing image targets
+IMG ?= $(IMG_NAME):$(IMG_TAG)
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -251,3 +257,36 @@ mv $(1) $(1)-$(3) ;\
 } ;\
 ln -sf $(1)-$(3) $(1)
 endef
+
+
+HELMIFY ?= $(LOCALBIN)/helmify
+HELM ?= $(LOCALBIN)/helm
+.PHONY: helmify
+helmify: $(HELMIFY) ## Download helmify locally if necessary.
+$(HELMIFY): $(LOCALBIN)
+	test -s $(LOCALBIN)/helmify || GOBIN=$(LOCALBIN) go install github.com/arttor/helmify/cmd/helmify@latest
+
+.PHONY: helm
+helm: $(HELM) ## Download helm locally if necessary.
+$(HELM): $(LOCALBIN)
+	@if [ ! -s $(LOCALBIN)/helm ]; then \
+		curl -sSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | HELM_INSTALL_DIR=$(LOCALBIN) PATH=$(LOCALBIN):$$PATH bash; \
+	fi
+
+.PHONY: helm-gen
+helm-gen: manifests kustomize helmify
+	$(KUSTOMIZE) build config/default | $(HELMIFY) -crd-dir ./charts/$(CHART_NAME) && \
+	sed -i 's/version: .*/version: $(CHART_VERSION)/' ./charts/$(CHART_NAME)/Chart.yaml && \
+	sed -i 's/appVersion: .*/appVersion: "$(IMG_TAG)"/' ./charts/$(CHART_NAME)/Chart.yaml
+
+.PHONY: helm-lint
+helm-lint: helm
+	$(HELM) lint ./charts/$(CHART_NAME)
+
+.PHONY: helm-package
+helm-package: helm helm-gen helm-lint
+	$(HELM) package ./charts/$(CHART_NAME) -d ./dist
+
+.PHONY: helm-push
+helm-push: helm
+	$(HELM) push ./dist/$(CHART_NAME)-$(CHART_VERSION).tgz $(CHART_REPO)
