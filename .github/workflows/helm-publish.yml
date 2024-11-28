@@ -5,11 +5,25 @@ on:
     branches:
       - main
 
+permissions:
+  id-token: write
+
 jobs:
   helm-publish:
     name: Run on Ubuntu
     runs-on: ubuntu-latest
     steps:
+      - id: auth
+        name: Authenticate to GCP
+        uses: 'google-github-actions/auth@f1e2d3c4b5a6f7e8d9c0b1a2c3d4e5f6a7b8c9d0'
+        with:
+          create_credentials_file: 'true'
+          workload_identity_provider: projects/327242297693/locations/global/workloadIdentityPools/opsmate-github-actions/providers/opsmate-operator-github-actions
+          service_account: 'projects/hjktech-metal/serviceAccounts/opsmate-github-actions@hjktech-metal.iam.gserviceaccount.com'
+      - name: docker login
+        run: |
+          gcloud auth login --brief --cred-file="${{ steps.auth.outputs.credentials_file_path }}"
+          gcloud auth configure-docker europe-west1-docker.pkg.dev
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Setup Go
