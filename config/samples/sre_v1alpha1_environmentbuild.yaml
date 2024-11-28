@@ -23,7 +23,5 @@ spec:
     ports:
       - port: 80
         targetPort: 8000
-  ingressAnnotations:
-    kubernetes.io/ingress.class: "nginx"
-  ingressTLS: false
+  ingressTLS: true
   ingressTargetPort: 80
