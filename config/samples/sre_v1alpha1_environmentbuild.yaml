@@ -6,7 +6,9 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: environmentbuild-sample
 spec:
-  template:
+  podAnnotations:
+    test-annotation: test-value
+  podTemplate:
     spec:
       containers:
         - name: opsmate

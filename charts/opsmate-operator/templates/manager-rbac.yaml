@@ -1,0 +1,72 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "opsmate-operator.fullname" . }}-manager-role
+  labels:
+  {{- include "opsmate-operator.labels" . | nindent 4 }}
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - ingresses
+  - pods
+  - services
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - sre.opsmate.io
+  resources:
+  - environmentbuilds
+  - tasks
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - sre.opsmate.io
+  resources:
+  - environmentbuilds/finalizers
+  - tasks/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - sre.opsmate.io
+  resources:
+  - environmentbuilds/status
+  - tasks/status
+  verbs:
+  - get
+  - patch
+  - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "opsmate-operator.fullname" . }}-manager-rolebinding
+  labels:
+  {{- include "opsmate-operator.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: '{{ include "opsmate-operator.fullname" . }}-manager-role'
+subjects:
+- kind: ServiceAccount
+  name: '{{ include "opsmate-operator.fullname" . }}-controller-manager'
+  namespace: '{{ .Release.Namespace }}'

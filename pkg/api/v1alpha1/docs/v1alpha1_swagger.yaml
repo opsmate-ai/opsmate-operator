@@ -5405,18 +5405,25 @@ definitions:
           +kubebuilder:validation:Optional
           IngressTargetPort is the service port for the ingress to target
         type: integer
+      podAnnotations:
+        additionalProperties:
+          type: string
+        description: |-
+          +kubebuilder:validation:Optional
+          PodAnnotations are the annotations for the pod
+        type: object
+      podTemplate:
+        allOf:
+        - $ref: '#/definitions/v1.PodTemplateSpec'
+        description: |-
+          +kubebuilder:validation:Required
+          PodTemplate is the execution environment definition in form of a pod template
       service:
         allOf:
         - $ref: '#/definitions/v1.ServiceSpec'
         description: |-
           +kubebuilder:validation:Required
           Service is the service definition for the environment build
-      template:
-        allOf:
-        - $ref: '#/definitions/v1.PodTemplateSpec'
-        description: |-
-          +kubebuilder:validation:Required
-          Template is the execution environment definition in form of a pod template
     type: object
   v1alpha1.EnvironmentBuildStatus:
     properties:
@@ -5460,6 +5467,11 @@ definitions:
           Context is the execution context for the task
           +kubebuilder:validation:Required
         type: string
+      description:
+        description: |-
+          Description is the description for the task
+          +kubebuilder:validation:Optional
+        type: string
       domainName:
         description: |-
           DomainName is the domain name for the task ingress
@@ -5474,11 +5486,6 @@ definitions:
         description: |-
           IngressSecretName is the name of the secret to use for the ingress TLS
           +kubebuilder:validation:Optional
-        type: string
-      instruction:
-        description: |-
-          Instruction is the instruction for the task
-          +kubebuilder:validation:Required
         type: string
       userID:
         description: |-

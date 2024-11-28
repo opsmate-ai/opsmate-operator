@@ -1,0 +1,39 @@
+name: Image Publish
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  image-publish:
+    name: Run on Ubuntu
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - id: auth
+        name: Authenticate to GCP
+        uses: 'google-github-actions/auth@v2'
+        with:
+          create_credentials_file: 'true'
+          workload_identity_provider: projects/327242297693/locations/global/workloadIdentityPools/opsmate-github-actions/providers/opsmate-operator-github-actions
+          service_account: opsmate-github-actions@hjktech-metal.iam.gserviceaccount.com
+      - name: docker login
+        run: |
+          gcloud auth login --brief --cred-file="${{ steps.auth.outputs.credentials_file_path }}"
+          gcloud auth configure-docker europe-west1-docker.pkg.dev
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '~1.22'
+      # only support x86_64 for now instead of using docker-buildx
+      - name: Build image
+        run: make docker-build
+
+      - name: Push image
+        run: make docker-push

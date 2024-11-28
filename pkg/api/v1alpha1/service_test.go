@@ -41,7 +41,7 @@ var _ = Describe("Service", func() {
 				Namespace: "default",
 			},
 			Spec: srev1alpha1.EnvironmentBuildSpec{
-				Template: corev1.PodTemplateSpec{
+				PodTemplate: corev1.PodTemplateSpec{
 					Spec: corev1.PodSpec{
 						Containers: []corev1.Container{
 							{
@@ -62,7 +62,7 @@ var _ = Describe("Service", func() {
 			Spec: srev1alpha1.TaskSpec{
 				UserID:               "anonymous",
 				EnvironmentBuildName: envBuild.Name,
-				Instruction:          "say hi",
+				Description:          "say hi",
 				Context:              "hello",
 			},
 			Status: srev1alpha1.TaskStatus{
@@ -162,7 +162,7 @@ var _ = Describe("Service", func() {
 					Namespace: "default",
 				},
 				Spec: srev1alpha1.EnvironmentBuildSpec{
-					Template: corev1.PodTemplateSpec{
+					PodTemplate: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
 								{
@@ -220,7 +220,7 @@ var _ = Describe("Service", func() {
 					Namespace: "default",
 				},
 				Spec: srev1alpha1.EnvironmentBuildSpec{
-					Template: corev1.PodTemplateSpec{
+					PodTemplate: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
 								{
@@ -253,7 +253,7 @@ var _ = Describe("Service", func() {
 					Namespace: "default",
 				},
 				Spec: srev1alpha1.EnvironmentBuildSpec{
-					Template: corev1.PodTemplateSpec{
+					PodTemplate: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
 								{
@@ -341,7 +341,7 @@ var _ = Describe("Service", func() {
 				Spec: srev1alpha1.TaskSpec{
 					UserID:               "anonymous",
 					EnvironmentBuildName: "test-env-build",
-					Instruction:          "say hi",
+					Description:          "say hi",
 					Context:              "hello",
 				},
 			}
@@ -390,7 +390,7 @@ var _ = Describe("Service", func() {
 				Spec: srev1alpha1.TaskSpec{
 					UserID:               "anonymous",
 					EnvironmentBuildName: "test-env-build",
-					Instruction:          "say hi",
+					Description:          "say hi",
 					Context:              "hello",
 				},
 			}

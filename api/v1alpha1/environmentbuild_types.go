@@ -13,9 +13,13 @@ type EnvironmentBuildSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
+	// +kubebuilder:validation:Optional
+	// PodAnnotations are the annotations for the pod
+	PodAnnotations map[string]string `json:"podAnnotations,omitempty"`
+
 	// +kubebuilder:validation:Required
-	// Template is the execution environment definition in form of a pod template
-	Template corev1.PodTemplateSpec `json:"template,omitempty"`
+	// PodTemplate is the execution environment definition in form of a pod template
+	PodTemplate corev1.PodTemplateSpec `json:"podTemplate,omitempty"`
 
 	// +kubebuilder:validation:Required
 	// Service is the service definition for the environment build

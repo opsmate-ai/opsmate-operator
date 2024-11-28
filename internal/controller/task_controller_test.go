@@ -125,6 +125,8 @@ var _ = Describe("Task Controller", func() {
 			var pod corev1.Pod
 			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: taskName, Namespace: namespace}, &pod)).To(Succeed())
 
+			Expect(pod.Annotations).To(HaveKeyWithValue("test-annotation", "test-value"))
+
 			var service corev1.Service
 			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: taskName, Namespace: namespace}, &service)).To(Succeed())
 
@@ -136,13 +138,15 @@ var _ = Describe("Task Controller", func() {
 			Expect(task.Status.InternalIP).To(Equal(pod.Status.PodIP))
 			Expect(task.Status.ServiceIP).To(Equal(service.Spec.ClusterIP))
 			Expect(task.Status.AllocatedAt).NotTo(BeNil())
-			Expect(task.Status.Conditions).To(HaveLen(3))
+			Expect(task.Status.Conditions).To(HaveLen(4))
 			Expect(task.Status.Conditions[0].Type).To(Equal(srev1alpha1.ConditionTaskPodScheduled))
 			Expect(task.Status.Conditions[0].Status).To(Equal(metav1.ConditionTrue))
 			Expect(task.Status.Conditions[1].Type).To(Equal(srev1alpha1.ConditionTaskPodRunning))
 			Expect(task.Status.Conditions[1].Status).To(Equal(metav1.ConditionTrue))
 			Expect(task.Status.Conditions[2].Type).To(Equal(srev1alpha1.ConditionTaskServiceUp))
 			Expect(task.Status.Conditions[2].Status).To(Equal(metav1.ConditionTrue))
+			Expect(task.Status.Conditions[3].Type).To(Equal(srev1alpha1.ConditionTaskIngressReady))
+			Expect(task.Status.Conditions[3].Status).To(Equal(metav1.ConditionTrue))
 
 			By("the service endpoint ip == pod ip")
 			var endpoint corev1.Endpoints
@@ -205,7 +209,7 @@ var _ = Describe("Task Controller", func() {
 
 		It("should remove the task when the environment build is invalid", func() {
 			envBuild := newEnvBuild(envBuildName, namespace)
-			envBuild.Spec.Template.Spec.Containers[0].Command = []string{"invalid-command"}
+			envBuild.Spec.PodTemplate.Spec.Containers[0].Command = []string{"invalid-command"}
 			Expect(k8sClient.Create(ctx, envBuild)).To(Succeed())
 
 			task := newTask(taskName, namespace, envBuildName)
@@ -223,7 +227,7 @@ var _ = Describe("Task Controller", func() {
 
 		It("should remove the task when the pod is partially failing", func() {
 			envBuild := newEnvBuild(envBuildName, namespace)
-			envBuild.Spec.Template.Spec.Containers = append(envBuild.Spec.Template.Spec.Containers, corev1.Container{
+			envBuild.Spec.PodTemplate.Spec.Containers = append(envBuild.Spec.PodTemplate.Spec.Containers, corev1.Container{
 				Name:    "failing-container",
 				Image:   "busybox",
 				Command: []string{"exit", "1"},
@@ -242,7 +246,7 @@ var _ = Describe("Task Controller", func() {
 
 		It("should remove the task when the pod is exit prematurely", func() {
 			envBuild := newEnvBuild(envBuildName, namespace)
-			envBuild.Spec.Template.Spec.Containers[0].Command = []string{"echo", "hello"}
+			envBuild.Spec.PodTemplate.Spec.Containers[0].Command = []string{"echo", "hello"}
 			Expect(k8sClient.Create(ctx, envBuild)).To(Succeed())
 
 			task := newTask(taskName, namespace, envBuildName)
@@ -256,7 +260,7 @@ var _ = Describe("Task Controller", func() {
 
 		It("should remove the task when the build is malformed", func() {
 			envBuild := newEnvBuild(envBuildName, namespace)
-			envBuild.Spec.Template.Spec.Containers[0].Name = "abcEFG" // invalid name
+			envBuild.Spec.PodTemplate.Spec.Containers[0].Name = "abcEFG" // invalid name
 			Expect(k8sClient.Create(ctx, envBuild)).To(Succeed())
 
 			task := newTask(taskName, namespace, envBuildName)
@@ -304,7 +308,10 @@ func newEnvBuild(name, namespace string) *srev1alpha1.EnvironmentBuild {
 			Namespace: namespace,
 		},
 		Spec: srev1alpha1.EnvironmentBuildSpec{
-			Template: corev1.PodTemplateSpec{
+			PodAnnotations: map[string]string{
+				"test-annotation": "test-value",
+			},
+			PodTemplate: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
 						Name:    "busybox",
@@ -339,7 +346,7 @@ func newTask(name, namespace, envBuildName string) *srev1alpha1.Task {
 		Spec: srev1alpha1.TaskSpec{
 			UserID:               "test-user",
 			EnvironmentBuildName: envBuildName,
-			Instruction:          "echo 'Hello, World!'",
+			Description:          "echo 'Hello, World!'",
 			DomainName:           "test-task.opsmate.hjktech.io",
 		},
 	}

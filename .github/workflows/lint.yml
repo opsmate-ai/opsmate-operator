@@ -1,9 +1,6 @@
 name: Lint
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
 
 jobs:
@@ -13,7 +10,6 @@ jobs:
     steps:
       - name: Clone the code
         uses: actions/checkout@v4
-
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
