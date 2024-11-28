@@ -4457,13 +4457,6 @@ const docTemplatev1alpha1 = `{
         "v1alpha1.EnvironmentBuildSpec": {
             "type": "object",
             "properties": {
-                "ingressAnnotations": {
-                    "description": "+kubebuilder:validation:Optional\nIngressAnnotations are the annotations for the ingress",
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
-                },
                 "ingressTLS": {
                     "description": "+kubebuilder:validation:Optional\nWhether to use TLS for the ingress",
                     "type": "boolean"
@@ -4550,6 +4543,13 @@ const docTemplatev1alpha1 = `{
                 "environmentBuildName": {
                     "description": "The environmentBuild that the task will use, must be in the same namespace as the task\n+kubebuilder:validation:Required",
                     "type": "string"
+                },
+                "ingressAnnotations": {
+                    "description": "+kubebuilder:validation:Optional\nIngressAnnotations are the annotations for the ingress",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
                 },
                 "ingressSecretName": {
                     "description": "IngressSecretName is the name of the secret to use for the ingress TLS\n+kubebuilder:validation:Optional",

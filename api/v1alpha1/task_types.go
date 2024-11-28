@@ -34,6 +34,10 @@ type TaskSpec struct {
 	// +kubebuilder:validation:Optional
 	DomainName string `json:"domainName,omitempty"`
 
+	// +kubebuilder:validation:Optional
+	// IngressAnnotations are the annotations for the ingress
+	IngressAnnotations map[string]string `json:"ingressAnnotations,omitempty"`
+
 	// IngressSecretName is the name of the secret to use for the ingress TLS
 	// +kubebuilder:validation:Optional
 	IngressSecretName string `json:"ingressSecretName,omitempty"`

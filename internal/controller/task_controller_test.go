@@ -328,9 +328,6 @@ func newEnvBuild(name, namespace string) *srev1alpha1.EnvironmentBuild {
 					TargetPort: intstr.FromInt(80),
 				}},
 			},
-			IngressAnnotations: map[string]string{
-				"kubernetes.io/tls-acme": "true",
-			},
 			IngressTLS:        true,
 			IngressTargetPort: 80,
 		},
@@ -348,6 +345,9 @@ func newTask(name, namespace, envBuildName string) *srev1alpha1.Task {
 			EnvironmentBuildName: envBuildName,
 			Description:          "echo 'Hello, World!'",
 			DomainName:           "test-task.opsmate.hjktech.io",
+			IngressAnnotations: map[string]string{
+				"kubernetes.io/tls-acme": "true",
+			},
 		},
 	}
 }
