@@ -76,6 +76,11 @@ spec:
                 description: The environmentBuild that the task will use, must be
                   in the same namespace as the task
                 type: string
+              ingressAnnotations:
+                additionalProperties:
+                  type: string
+                description: IngressAnnotations are the annotations for the ingress
+                type: object
               ingressSecretName:
                 description: IngressSecretName is the name of the secret to use for
                   the ingress TLS

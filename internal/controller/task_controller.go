@@ -641,7 +641,7 @@ func (r *TaskReconciler) createIngress(ctx context.Context, task *srev1alpha1.Ta
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        task.Name,
 			Namespace:   task.Namespace,
-			Annotations: envBuild.Spec.IngressAnnotations,
+			Annotations: task.Spec.IngressAnnotations,
 		},
 		Spec: networkingv1.IngressSpec{
 			Rules: []networkingv1.IngressRule{

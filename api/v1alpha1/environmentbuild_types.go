@@ -26,10 +26,6 @@ type EnvironmentBuildSpec struct {
 	Service corev1.ServiceSpec `json:"service,omitempty"`
 
 	// +kubebuilder:validation:Optional
-	// IngressAnnotations are the annotations for the ingress
-	IngressAnnotations map[string]string `json:"ingressAnnotations,omitempty"`
-
-	// +kubebuilder:validation:Optional
 	// Whether to use TLS for the ingress
 	IngressTLS bool `json:"ingressTLS,omitempty"`
 
