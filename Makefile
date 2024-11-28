@@ -275,7 +275,7 @@ $(HELM): $(LOCALBIN)
 
 .PHONY: helm-gen
 helm-gen: manifests kustomize helmify
-	$(KUSTOMIZE) build config/default | $(HELMIFY) -crd-dir ./charts/$(CHART_NAME) && \
+	$(KUSTOMIZE) build config/default | $(HELMIFY) -image-pull-secrets -crd-dir ./charts/$(CHART_NAME) && \
 	sed -i 's/version: .*/version: $(CHART_VERSION)/' ./charts/$(CHART_NAME)/Chart.yaml && \
 	sed -i 's/appVersion: .*/appVersion: "$(IMG_TAG)"/' ./charts/$(CHART_NAME)/Chart.yaml
 
