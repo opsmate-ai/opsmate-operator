@@ -4457,6 +4457,10 @@ const docTemplatev1alpha1 = `{
         "v1alpha1.EnvironmentBuildSpec": {
             "type": "object",
             "properties": {
+                "databaseVolumePath": {
+                    "description": "+kubebuilder:validation:Optional\nDatabaseVolumePath is the path to the database volume. At the moment only supported sqlite",
+                    "type": "string"
+                },
                 "ingressTLS": {
                     "description": "+kubebuilder:validation:Optional\nWhether to use TLS for the ingress",
                     "type": "boolean"
@@ -4621,6 +4625,10 @@ const docTemplatev1alpha1 = `{
                 },
                 "state": {
                     "description": "+kubebuilder:validation:Enum=PENDING;SCHEDULED;RUNNING;TERMINATING;ERROR;NOT_FOUND\n+kubebuilder:default:=PENDING",
+                    "type": "string"
+                },
+                "token": {
+                    "description": "Token is the token for accessing the task\n+optional",
                     "type": "string"
                 }
             }

@@ -32,6 +32,10 @@ type EnvironmentBuildSpec struct {
 	// +kubebuilder:validation:Optional
 	// IngressTargetPort is the service port for the ingress to target
 	IngressTargetPort int `json:"ingressTargetPort,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	// DatabaseVolumePath is the path to the database volume. At the moment only supported sqlite
+	DatabaseVolumePath string `json:"databaseVolumePath,omitempty"`
 }
 
 // EnvironmentBuildStatus defines the observed state of EnvironmentBuild.

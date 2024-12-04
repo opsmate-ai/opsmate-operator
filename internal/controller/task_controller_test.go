@@ -154,6 +154,35 @@ var _ = Describe("Task Controller", func() {
 			Expect(endpoint.Subsets).To(HaveLen(1))
 			Expect(endpoint.Subsets[0].Addresses).To(HaveLen(1))
 			Expect(endpoint.Subsets[0].Addresses[0].IP).To(Equal(pod.Status.PodIP))
+
+			By("having pod env vars populated")
+			Expect(pod.Spec.Containers).To(HaveLen(1))
+			Expect(pod.Spec.Containers[0].Env).To(ContainElement(corev1.EnvVar{
+				Name:  "OPSMATE_TOKEN",
+				Value: task.Status.Token,
+			}))
+			Expect(pod.Spec.Containers[0].Env).To(ContainElement(corev1.EnvVar{
+				Name:  "OPSMATE_SESSION_NAME",
+				Value: task.Name,
+			}))
+			Expect(pod.Spec.Containers[0].Env).To(ContainElement(corev1.EnvVar{
+				Name:  "OPSMATE_DB_URL",
+				Value: "sqlite:////var/opsmate/opsmate.db",
+			}))
+
+			By("having the database volume mounted")
+			Expect(pod.Spec.Containers[0].VolumeMounts).To(ContainElement(corev1.VolumeMount{
+				Name:      "database",
+				MountPath: "/var/opsmate",
+			}))
+
+			By("having the database volume path set")
+			Expect(pod.Spec.Volumes).To(ContainElement(corev1.Volume{
+				Name: "database",
+				VolumeSource: corev1.VolumeSource{
+					EmptyDir: &corev1.EmptyDirVolumeSource{},
+				},
+			}))
 		})
 
 		It("should remove the pod when the task is removed", func() {
@@ -328,8 +357,9 @@ func newEnvBuild(name, namespace string) *srev1alpha1.EnvironmentBuild {
 					TargetPort: intstr.FromInt(80),
 				}},
 			},
-			IngressTLS:        true,
-			IngressTargetPort: 80,
+			DatabaseVolumePath: "/var/opsmate",
+			IngressTLS:         true,
+			IngressTargetPort:  80,
 		},
 	}
 }

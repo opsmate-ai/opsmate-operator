@@ -5388,6 +5388,11 @@ definitions:
     type: object
   v1alpha1.EnvironmentBuildSpec:
     properties:
+      databaseVolumePath:
+        description: |-
+          +kubebuilder:validation:Optional
+          DatabaseVolumePath is the path to the database volume. At the moment only supported sqlite
+        type: string
       ingressTLS:
         description: |-
           +kubebuilder:validation:Optional
@@ -5555,6 +5560,11 @@ definitions:
         description: |-
           +kubebuilder:validation:Enum=PENDING;SCHEDULED;RUNNING;TERMINATING;ERROR;NOT_FOUND
           +kubebuilder:default:=PENDING
+        type: string
+      token:
+        description: |-
+          Token is the token for accessing the task
+          +optional
         type: string
     type: object
 info:

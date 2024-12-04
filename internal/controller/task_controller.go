@@ -12,6 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/google/uuid"
 	srev1alpha1 "github.com/jingkaihe/opsmate-operator/api/v1alpha1"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -157,6 +158,7 @@ func (r *TaskReconciler) statePending(ctx context.Context, task *srev1alpha1.Tas
 		return ctrl.Result{}, err
 	}
 
+	task.Status.Token = uuid.New().String()
 	podRef, err := r.createPod(ctx, task, &envBuild)
 	if err != nil {
 		logger.Error(err, "failed to create pod")
@@ -533,11 +535,54 @@ func (r *TaskReconciler) createPod(ctx context.Context, task *srev1alpha1.Task, 
 	// prevent pod from restarting
 	pod.Spec.RestartPolicy = corev1.RestartPolicyNever
 
+	if pod.Spec.Volumes == nil {
+		pod.Spec.Volumes = []corev1.Volume{}
+	}
+	pod.Spec.Volumes = append(pod.Spec.Volumes, corev1.Volume{
+		Name: "database",
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
+		},
+	})
+
 	// add the task label to the pod
 	if pod.Labels == nil {
 		pod.Labels = make(map[string]string)
 	}
 	pod.Labels["opsmate.io/task"] = task.Name
+
+	// add token to the containers
+	for i := range pod.Spec.Containers {
+		if pod.Spec.Containers[i].Env == nil {
+			pod.Spec.Containers[i].Env = []corev1.EnvVar{}
+		}
+		envVars := []corev1.EnvVar{
+			{
+				Name:  "OPSMATE_TOKEN",
+				Value: task.Status.Token,
+			},
+			{
+				Name:  "OPSMATE_SESSION_NAME",
+				Value: task.Name,
+			},
+		}
+		pod.Spec.Containers[i].Env = append(pod.Spec.Containers[i].Env, envVars...)
+
+		if envBuild.Spec.DatabaseVolumePath != "" {
+			if pod.Spec.Containers[i].VolumeMounts == nil {
+				pod.Spec.Containers[i].VolumeMounts = []corev1.VolumeMount{}
+			}
+			pod.Spec.Containers[i].VolumeMounts = append(pod.Spec.Containers[i].VolumeMounts, corev1.VolumeMount{
+				Name:      "database",
+				MountPath: envBuild.Spec.DatabaseVolumePath,
+			})
+
+			pod.Spec.Containers[i].Env = append(pod.Spec.Containers[i].Env, corev1.EnvVar{
+				Name:  "OPSMATE_DB_URL",
+				Value: fmt.Sprintf("sqlite:///%s/opsmate.db", envBuild.Spec.DatabaseVolumePath),
+			})
+		}
+	}
 
 	if err := ctrl.SetControllerReference(task, &pod, r.Scheme); err != nil {
 		return nil, err
