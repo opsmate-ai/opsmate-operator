@@ -535,6 +535,16 @@ func (r *TaskReconciler) createPod(ctx context.Context, task *srev1alpha1.Task, 
 	// prevent pod from restarting
 	pod.Spec.RestartPolicy = corev1.RestartPolicyNever
 
+	if pod.Spec.Volumes == nil {
+		pod.Spec.Volumes = []corev1.Volume{}
+	}
+	pod.Spec.Volumes = append(pod.Spec.Volumes, corev1.Volume{
+		Name: "database",
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
+		},
+	})
+
 	// add the task label to the pod
 	if pod.Labels == nil {
 		pod.Labels = make(map[string]string)
@@ -557,6 +567,21 @@ func (r *TaskReconciler) createPod(ctx context.Context, task *srev1alpha1.Task, 
 			},
 		}
 		pod.Spec.Containers[i].Env = append(pod.Spec.Containers[i].Env, envVars...)
+
+		if envBuild.Spec.DatabaseVolumePath != "" {
+			if pod.Spec.Containers[i].VolumeMounts == nil {
+				pod.Spec.Containers[i].VolumeMounts = []corev1.VolumeMount{}
+			}
+			pod.Spec.Containers[i].VolumeMounts = append(pod.Spec.Containers[i].VolumeMounts, corev1.VolumeMount{
+				Name:      "database",
+				MountPath: envBuild.Spec.DatabaseVolumePath,
+			})
+
+			pod.Spec.Containers[i].Env = append(pod.Spec.Containers[i].Env, corev1.EnvVar{
+				Name:  "OPSMATE_DB_URL",
+				Value: fmt.Sprintf("sqlite:///%s/opsmate.db", envBuild.Spec.DatabaseVolumePath),
+			})
+		}
 	}
 
 	if err := ctrl.SetControllerReference(task, &pod, r.Scheme); err != nil {

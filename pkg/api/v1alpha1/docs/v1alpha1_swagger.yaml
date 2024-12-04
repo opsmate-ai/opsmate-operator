@@ -5388,6 +5388,11 @@ definitions:
     type: object
   v1alpha1.EnvironmentBuildSpec:
     properties:
+      databaseVolumePath:
+        description: |-
+          +kubebuilder:validation:Optional
+          DatabaseVolumePath is the path to the database volume. At the moment only supported sqlite
+        type: string
       ingressTLS:
         description: |-
           +kubebuilder:validation:Optional

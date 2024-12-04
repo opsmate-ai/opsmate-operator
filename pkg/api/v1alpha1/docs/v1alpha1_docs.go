@@ -4457,6 +4457,10 @@ const docTemplatev1alpha1 = `{
         "v1alpha1.EnvironmentBuildSpec": {
             "type": "object",
             "properties": {
+                "databaseVolumePath": {
+                    "description": "+kubebuilder:validation:Optional\nDatabaseVolumePath is the path to the database volume. At the moment only supported sqlite",
+                    "type": "string"
+                },
                 "ingressTLS": {
                     "description": "+kubebuilder:validation:Optional\nWhether to use TLS for the ingress",
                     "type": "boolean"
