@@ -314,6 +314,9 @@ spec:
                 - ERROR
                 - NOT_FOUND
                 type: string
+              token:
+                description: Token is the token for accessing the task
+                type: string
             type: object
         type: object
     served: true
