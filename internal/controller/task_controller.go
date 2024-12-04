@@ -158,8 +158,8 @@ func (r *TaskReconciler) statePending(ctx context.Context, task *srev1alpha1.Tas
 		return ctrl.Result{}, err
 	}
 
-	token := uuid.New().String()
-	podRef, err := r.createPod(ctx, task, &envBuild, token)
+	task.Status.Token = uuid.New().String()
+	podRef, err := r.createPod(ctx, task, &envBuild)
 	if err != nil {
 		logger.Error(err, "failed to create pod")
 		return r.markTaskAsError(ctx, task, errors.Wrap(err, "failed to create pod"))
@@ -181,7 +181,6 @@ func (r *TaskReconciler) statePending(ctx context.Context, task *srev1alpha1.Tas
 	task.Status.Service = serviceRef
 	task.Status.Ingress = ingressRef
 	task.Status.State = srev1alpha1.StateScheduled
-	task.Status.Token = token
 
 	logger.Info("task scheduled", "pod", podRef)
 
@@ -501,7 +500,7 @@ func podReadyAndRunning(pod *corev1.Pod) bool {
 }
 
 // create the pod if not exists
-func (r *TaskReconciler) createPod(ctx context.Context, task *srev1alpha1.Task, envBuild *srev1alpha1.EnvironmentBuild, token string) (*corev1.ObjectReference, error) {
+func (r *TaskReconciler) createPod(ctx context.Context, task *srev1alpha1.Task, envBuild *srev1alpha1.EnvironmentBuild) (*corev1.ObjectReference, error) {
 	logger := log.FromContext(ctx)
 
 	var pod corev1.Pod
@@ -550,7 +549,7 @@ func (r *TaskReconciler) createPod(ctx context.Context, task *srev1alpha1.Task, 
 		envVars := []corev1.EnvVar{
 			{
 				Name:  "OPSMATE_TOKEN",
-				Value: token,
+				Value: task.Status.Token,
 			},
 			{
 				Name:  "OPSMATE_SESSION_NAME",
