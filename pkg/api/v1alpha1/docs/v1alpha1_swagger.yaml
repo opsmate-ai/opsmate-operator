@@ -5556,6 +5556,11 @@ definitions:
           +kubebuilder:validation:Enum=PENDING;SCHEDULED;RUNNING;TERMINATING;ERROR;NOT_FOUND
           +kubebuilder:default:=PENDING
         type: string
+      token:
+        description: |-
+          Token is the token for accessing the task
+          +optional
+        type: string
     type: object
 info:
   contact:

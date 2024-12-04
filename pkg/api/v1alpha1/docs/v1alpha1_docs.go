@@ -4622,6 +4622,10 @@ const docTemplatev1alpha1 = `{
                 "state": {
                     "description": "+kubebuilder:validation:Enum=PENDING;SCHEDULED;RUNNING;TERMINATING;ERROR;NOT_FOUND\n+kubebuilder:default:=PENDING",
                     "type": "string"
+                },
+                "token": {
+                    "description": "Token is the token for accessing the task\n+optional",
+                    "type": "string"
                 }
             }
         }

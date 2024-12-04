@@ -12,6 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/google/uuid"
 	srev1alpha1 "github.com/jingkaihe/opsmate-operator/api/v1alpha1"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -157,7 +158,8 @@ func (r *TaskReconciler) statePending(ctx context.Context, task *srev1alpha1.Tas
 		return ctrl.Result{}, err
 	}
 
-	podRef, err := r.createPod(ctx, task, &envBuild)
+	token := uuid.New().String()
+	podRef, err := r.createPod(ctx, task, &envBuild, token)
 	if err != nil {
 		logger.Error(err, "failed to create pod")
 		return r.markTaskAsError(ctx, task, errors.Wrap(err, "failed to create pod"))
@@ -179,6 +181,7 @@ func (r *TaskReconciler) statePending(ctx context.Context, task *srev1alpha1.Tas
 	task.Status.Service = serviceRef
 	task.Status.Ingress = ingressRef
 	task.Status.State = srev1alpha1.StateScheduled
+	task.Status.Token = token
 
 	logger.Info("task scheduled", "pod", podRef)
 
@@ -498,7 +501,7 @@ func podReadyAndRunning(pod *corev1.Pod) bool {
 }
 
 // create the pod if not exists
-func (r *TaskReconciler) createPod(ctx context.Context, task *srev1alpha1.Task, envBuild *srev1alpha1.EnvironmentBuild) (*corev1.ObjectReference, error) {
+func (r *TaskReconciler) createPod(ctx context.Context, task *srev1alpha1.Task, envBuild *srev1alpha1.EnvironmentBuild, token string) (*corev1.ObjectReference, error) {
 	logger := log.FromContext(ctx)
 
 	var pod corev1.Pod
@@ -538,6 +541,24 @@ func (r *TaskReconciler) createPod(ctx context.Context, task *srev1alpha1.Task, 
 		pod.Labels = make(map[string]string)
 	}
 	pod.Labels["opsmate.io/task"] = task.Name
+
+	// add token to the containers
+	for i := range pod.Spec.Containers {
+		if pod.Spec.Containers[i].Env == nil {
+			pod.Spec.Containers[i].Env = []corev1.EnvVar{}
+		}
+		envVars := []corev1.EnvVar{
+			{
+				Name:  "OPSMATE_TOKEN",
+				Value: token,
+			},
+			{
+				Name:  "OPSMATE_SESSION_NAME",
+				Value: task.Name,
+			},
+		}
+		pod.Spec.Containers[i].Env = append(pod.Spec.Containers[i].Env, envVars...)
+	}
 
 	if err := ctrl.SetControllerReference(task, &pod, r.Scheme); err != nil {
 		return nil, err

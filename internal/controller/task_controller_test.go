@@ -154,6 +154,13 @@ var _ = Describe("Task Controller", func() {
 			Expect(endpoint.Subsets).To(HaveLen(1))
 			Expect(endpoint.Subsets[0].Addresses).To(HaveLen(1))
 			Expect(endpoint.Subsets[0].Addresses[0].IP).To(Equal(pod.Status.PodIP))
+
+			By("having the token equal to the value in the pod env var")
+			Expect(pod.Spec.Containers).To(HaveLen(1))
+			Expect(pod.Spec.Containers[0].Env).To(ContainElement(corev1.EnvVar{
+				Name:  "OPSMATE_TOKEN",
+				Value: task.Status.Token,
+			}))
 		})
 
 		It("should remove the pod when the task is removed", func() {

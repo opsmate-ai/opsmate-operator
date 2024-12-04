@@ -84,6 +84,10 @@ type TaskStatus struct {
 	// +optional
 	IngressDomain string `json:"ingressDomain,omitempty"`
 
+	// Token is the token for accessing the task
+	// +optional
+	Token string `json:"token,omitempty"`
+
 	// The time when the task pod is up and running
 	// +optional
 	AllocatedAt *metav1.Time `json:"allocatedAt,omitempty"`
