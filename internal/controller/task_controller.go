@@ -48,7 +48,7 @@ const (
 	ownerKind                = "Task"
 	ownerKey                 = ".metadata.controller"
 	resourceProvisionTimeout = 10 * time.Second
-	taskTimeout              = 10 * time.Minute
+	defaultTaskTTL           = 20 * time.Minute
 	syncPeriod               = 10 * time.Minute
 )
 
@@ -304,15 +304,21 @@ func (r *TaskReconciler) stateRunning(ctx context.Context, task *srev1alpha1.Tas
 		return ctrl.Result{}, nil
 	}
 
-	if time.Now().After(pod.CreationTimestamp.Add(taskTimeout)) {
+	ttl := task.Spec.TTL.Duration
+	if ttl == 0 {
+		logger.Info("task TTL is not set, using default", "default", defaultTaskTTL)
+		ttl = defaultTaskTTL
+	}
+
+	if time.Now().After(pod.CreationTimestamp.Add(ttl)) {
 		logger.Info("task is terminating",
 			"state", srev1alpha1.StateTerminating,
-			"reason", "task timeout",
-			"timeout", taskTimeout,
+			"reason", "task TTL expired",
+			"ttl", ttl,
 			"lifetime", time.Since(pod.CreationTimestamp.Time).String(),
 		)
 
-		r.Recorder.Event(task, corev1.EventTypeWarning, "TaskTimeout", fmt.Sprintf("Timed out after %s", taskTimeout))
+		r.Recorder.Event(task, corev1.EventTypeWarning, "TaskTTLExpired", fmt.Sprintf("Task timed out after %s", ttl))
 		updateState(task, srev1alpha1.StateTerminating)
 		return ctrl.Result{}, nil
 	}
