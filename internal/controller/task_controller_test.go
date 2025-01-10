@@ -301,6 +301,23 @@ var _ = Describe("Task Controller", func() {
 			Eventually(ensureTaskRemoved(ctx, taskName)).WithTimeout(5 * time.Second).Should(BeTrue())
 		})
 
+		It("should remove the task when the task TTL expires", func() {
+			envBuild := newEnvBuild(envBuildName, namespace)
+			Expect(k8sClient.Create(ctx, envBuild)).To(Succeed())
+
+			task := newTask(taskName, namespace, envBuildName)
+			task.Spec.TTL = &metav1.Duration{Duration: 1 * time.Second}
+			Expect(k8sClient.Create(ctx, task)).To(Succeed())
+
+			By("the task has been running")
+			Eventually(ensureTaskStateTransition(ctx, taskName, srev1alpha1.StateRunning)).WithTimeout(5 * time.Second).Should(BeTrue())
+
+			By("the task is eventually terminated")
+			Eventually(ensureTaskStateTransition(ctx, taskName, srev1alpha1.StateTerminating)).WithTimeout(5 * time.Second).Should(BeTrue())
+			Eventually(ensureTaskRemoved(ctx, taskName)).WithTimeout(5 * time.Second).Should(BeTrue())
+			Eventually(ensureTaskEvent(ctx, taskName, "Task timed out after 1s")).WithTimeout(5 * time.Second).Should(BeTrue())
+		})
+
 		// slow test
 		// It("should terminate the task when the pod is terminated", func() {
 		// 	envBuild := newEnvBuild(envBuildName, namespace)

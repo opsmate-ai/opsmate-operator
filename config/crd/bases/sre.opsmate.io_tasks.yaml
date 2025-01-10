@@ -86,6 +86,10 @@ spec:
                 description: IngressSecretName is the name of the secret to use for
                   the ingress TLS
                 type: string
+              ttl:
+                default: 10m
+                description: TTL is the time to live for the task
+                type: string
               userID:
                 default: anonymous
                 description: The user ID that initiated the Task

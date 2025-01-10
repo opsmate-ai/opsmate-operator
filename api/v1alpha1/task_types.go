@@ -41,6 +41,11 @@ type TaskSpec struct {
 	// IngressSecretName is the name of the secret to use for the ingress TLS
 	// +kubebuilder:validation:Optional
 	IngressSecretName string `json:"ingressSecretName,omitempty"`
+
+	// TTL is the time to live for the task
+	// +optional
+	// +kubebuilder:default:="10m"
+	TTL *metav1.Duration `json:"ttl,omitempty"`
 }
 
 // TaskStatus defines the observed state of Task.
