@@ -35,8 +35,8 @@ spec:
     - jsonPath: .status.serviceIP
       name: ServiceIP
       type: string
-    - jsonPath: .status.ingressDomain
-      name: IngressDomain
+    - jsonPath: .spec.domainName
+      name: DomainName
       type: string
     name: v1alpha1
     schema:
