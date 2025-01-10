@@ -87,7 +87,7 @@ spec:
                   the ingress TLS
                 type: string
               ttl:
-                default: 10m
+                default: 20m
                 description: TTL is the time to live for the task
                 type: string
               userID:

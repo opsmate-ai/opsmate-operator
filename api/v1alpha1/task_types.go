@@ -44,7 +44,7 @@ type TaskSpec struct {
 
 	// TTL is the time to live for the task
 	// +optional
-	// +kubebuilder:default:="10m"
+	// +kubebuilder:default:="20m"
 	TTL *metav1.Duration `json:"ttl,omitempty"`
 }
 
