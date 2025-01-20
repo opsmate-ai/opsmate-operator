@@ -962,6 +962,61 @@ definitions:
           $ref: '#/definitions/v1.DownwardAPIVolumeFile'
         type: array
     type: object
+  v1.Duration:
+    properties:
+      time.Duration:
+        enum:
+        - -9223372036854775808
+        - 9223372036854775807
+        - 1
+        - 1000
+        - 1000000
+        - 1000000000
+        - 60000000000
+        - 3600000000000
+        - -9223372036854775808
+        - 9223372036854775807
+        - 1
+        - 1000
+        - 1000000
+        - 1000000000
+        - 60000000000
+        - 3600000000000
+        - -9223372036854775808
+        - 9223372036854775807
+        - 1
+        - 1000
+        - 1000000
+        - 1000000000
+        - 60000000000
+        - 3600000000000
+        type: integer
+        x-enum-varnames:
+        - minDuration
+        - maxDuration
+        - Nanosecond
+        - Microsecond
+        - Millisecond
+        - Second
+        - Minute
+        - Hour
+        - minDuration
+        - maxDuration
+        - Nanosecond
+        - Microsecond
+        - Millisecond
+        - Second
+        - Minute
+        - Hour
+        - minDuration
+        - maxDuration
+        - Nanosecond
+        - Microsecond
+        - Millisecond
+        - Second
+        - Minute
+        - Hour
+    type: object
   v1.EmptyDirVolumeSource:
     properties:
       medium:
@@ -5492,6 +5547,19 @@ definitions:
           IngressSecretName is the name of the secret to use for the ingress TLS
           +kubebuilder:validation:Optional
         type: string
+      terminateOnFailure:
+        description: |-
+          TerminateOnFailure is a flag to terminate the task if it fails
+          +optional
+          +kubebuilder:default:=true
+        type: boolean
+      ttl:
+        allOf:
+        - $ref: '#/definitions/v1.Duration'
+        description: |-
+          TTL is the time to live for the task
+          +optional
+          +kubebuilder:default:="20m"
       userID:
         description: |-
           The user ID that initiated the Task

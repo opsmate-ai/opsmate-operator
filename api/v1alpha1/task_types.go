@@ -46,6 +46,11 @@ type TaskSpec struct {
 	// +optional
 	// +kubebuilder:default:="20m"
 	TTL *metav1.Duration `json:"ttl,omitempty"`
+
+	// TerminateOnFailure is a flag to terminate the task if it fails
+	// +optional
+	// +kubebuilder:default:=true
+	TerminateOnFailure *bool `json:"terminateOnFailure,omitempty"`
 }
 
 // TaskStatus defines the observed state of Task.
