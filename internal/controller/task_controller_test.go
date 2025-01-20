@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -284,7 +284,7 @@ var _ = Describe("Task Controller", func() {
 			Expect(k8sClient.Create(ctx, envBuild)).To(Succeed())
 
 			task := newTask(taskName, namespace, envBuildName)
-			task.Spec.TerminateOnFailure = pointer.Bool(false)
+			task.Spec.TerminateOnFailure = ptr.To(false)
 			Expect(k8sClient.Create(ctx, task)).To(Succeed())
 
 			By("it's eventually failed")
