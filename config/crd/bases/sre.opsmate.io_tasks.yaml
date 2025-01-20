@@ -86,6 +86,11 @@ spec:
                 description: IngressSecretName is the name of the secret to use for
                   the ingress TLS
                 type: string
+              terminateOnFailure:
+                default: true
+                description: TerminateOnFailure is a flag to terminate the task if
+                  it fails
+                type: boolean
               ttl:
                 default: 20m
                 description: TTL is the time to live for the task

@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -271,6 +272,26 @@ var _ = Describe("Task Controller", func() {
 			Eventually(ensureTaskEvent(ctx, taskName, "pod container error")).WithTimeout(5 * time.Second).Should(BeTrue())
 			Eventually(ensureTaskStateTransition(ctx, taskName, srev1alpha1.StateTerminating)).WithTimeout(5 * time.Second).Should(BeTrue())
 			Eventually(ensureTaskRemoved(ctx, taskName)).WithTimeout(5 * time.Second).Should(BeTrue())
+		})
+
+		It("should not remove the task when the pod is partially failing and terminateOnFailure is false", func() {
+			envBuild := newEnvBuild(envBuildName, namespace)
+			envBuild.Spec.PodTemplate.Spec.Containers = append(envBuild.Spec.PodTemplate.Spec.Containers, corev1.Container{
+				Name:    "failing-container",
+				Image:   "busybox",
+				Command: []string{"exit", "1"},
+			})
+			Expect(k8sClient.Create(ctx, envBuild)).To(Succeed())
+
+			task := newTask(taskName, namespace, envBuildName)
+			task.Spec.TerminateOnFailure = pointer.Bool(false)
+			Expect(k8sClient.Create(ctx, task)).To(Succeed())
+
+			By("it's eventually failed")
+			Eventually(ensureTaskStateTransition(ctx, taskName, srev1alpha1.StateError)).WithTimeout(5 * time.Second).Should(BeTrue())
+			Eventually(ensureTaskEvent(ctx, taskName, "pod container error")).WithTimeout(5 * time.Second).Should(BeTrue())
+			// task is not removed
+			Consistently(ensureTaskRemoved(ctx, taskName)).WithTimeout(3 * time.Second).Should(BeFalse())
 		})
 
 		It("should remove the task when the pod is exit prematurely", func() {

@@ -293,8 +293,8 @@ func (r *TaskReconciler) stateRunning(ctx context.Context, task *srev1alpha1.Tas
 		}
 
 		// pod not found
-		logger.Info("task is terminating", "state", srev1alpha1.StateTerminating)
-		updateState(task, srev1alpha1.StateTerminating)
+		logger.Info("task has no pod", "state", srev1alpha1.StateError)
+		updateState(task, srev1alpha1.StateError)
 		return ctrl.Result{}, nil
 	}
 
@@ -346,8 +346,14 @@ func (r *TaskReconciler) stateNotFound(_ context.Context, _ *srev1alpha1.Task) (
 }
 
 func (r *TaskReconciler) stateError(ctx context.Context, task *srev1alpha1.Task) (ctrl.Result, error) {
-	task.Status.State = srev1alpha1.StateTerminating
-	return r.updateTaskStatus(ctx, task)
+	if task.Spec.TerminateOnFailure != nil && *task.Spec.TerminateOnFailure {
+		logger := log.FromContext(ctx)
+		logger.Info("task is terminating", "terminateOnFailure", *task.Spec.TerminateOnFailure)
+		task.Status.State = srev1alpha1.StateTerminating
+		return r.updateTaskStatus(ctx, task)
+	} else {
+		return ctrl.Result{}, nil
+	}
 }
 
 func (r *TaskReconciler) markTaskAsError(ctx context.Context, task *srev1alpha1.Task, reason error) (ctrl.Result, error) {

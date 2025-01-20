@@ -1024,6 +1024,66 @@ const docTemplatev1alpha1 = `{
                 }
             }
         },
+        "v1.Duration": {
+            "type": "object",
+            "properties": {
+                "time.Duration": {
+                    "type": "integer",
+                    "enum": [
+                        -9223372036854775808,
+                        9223372036854775807,
+                        1,
+                        1000,
+                        1000000,
+                        1000000000,
+                        60000000000,
+                        3600000000000,
+                        -9223372036854775808,
+                        9223372036854775807,
+                        1,
+                        1000,
+                        1000000,
+                        1000000000,
+                        60000000000,
+                        3600000000000,
+                        -9223372036854775808,
+                        9223372036854775807,
+                        1,
+                        1000,
+                        1000000,
+                        1000000000,
+                        60000000000,
+                        3600000000000
+                    ],
+                    "x-enum-varnames": [
+                        "minDuration",
+                        "maxDuration",
+                        "Nanosecond",
+                        "Microsecond",
+                        "Millisecond",
+                        "Second",
+                        "Minute",
+                        "Hour",
+                        "minDuration",
+                        "maxDuration",
+                        "Nanosecond",
+                        "Microsecond",
+                        "Millisecond",
+                        "Second",
+                        "Minute",
+                        "Hour",
+                        "minDuration",
+                        "maxDuration",
+                        "Nanosecond",
+                        "Microsecond",
+                        "Millisecond",
+                        "Second",
+                        "Minute",
+                        "Hour"
+                    ]
+                }
+            }
+        },
         "v1.EmptyDirVolumeSource": {
             "type": "object",
             "properties": {
@@ -4558,6 +4618,18 @@ const docTemplatev1alpha1 = `{
                 "ingressSecretName": {
                     "description": "IngressSecretName is the name of the secret to use for the ingress TLS\n+kubebuilder:validation:Optional",
                     "type": "string"
+                },
+                "terminateOnFailure": {
+                    "description": "TerminateOnFailure is a flag to terminate the task if it fails\n+optional\n+kubebuilder:default:=true",
+                    "type": "boolean"
+                },
+                "ttl": {
+                    "description": "TTL is the time to live for the task\n+optional\n+kubebuilder:default:=\"20m\"",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1.Duration"
+                        }
+                    ]
                 },
                 "userID": {
                     "description": "The user ID that initiated the Task\n+kubebuilder:validation:Required\n+kubebuilder:default:=\"anonymous\"",
