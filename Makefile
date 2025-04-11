@@ -2,12 +2,12 @@
 ENVTEST_K8S_VERSION = 1.31.0
 KIND_VERSION ?= v0.25.0
 SWAG ?= $(LOCALBIN)/swag
-IMG_NAME ?= europe-west1-docker.pkg.dev/hjktech-metal/opsmate-images/opsmate-controller-manager
+IMG_NAME ?= ghcr.io/jingkaihe/opsmate-controller-manager
 IMG_TAG ?= $(shell cat VERSION.txt)
 CHART_NAME ?= opsmate-operator
 # VERSION without the patch version
 CHART_VERSION = $(shell cat VERSION.txt | awk -F'.' '{print $$1"."$$2"."$$3}')
-CHART_REPO ?= oci://europe-west1-docker.pkg.dev/hjktech-metal/opsmate-charts
+CHART_REPO ?= oci://ghcr.io/jingkaihe/opsmate-operator
 # Image URL to use all building/pushing image targets
 IMG ?= $(IMG_NAME):$(IMG_TAG)
 
