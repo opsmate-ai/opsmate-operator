@@ -1,5 +1,7 @@
 # opsmate-operator
 
+> **⚠️ This project is under active development. Features are subject to change. Use at your own risk.**
+
 `opsmate-operator` is a Kubernetes operator for managing and orchestrating [opsmate](https://github.com/opsmate-ai/opsmate) environments and tasks. The operator simplifies the deployment, management, and lifecycle of ephemeral environments for operations tasks.
 
 ## Description
@@ -8,93 +10,21 @@ The opsmate-operator extends the Kubernetes API with custom resources for managi
 
 The operator maintains the full lifecycle of these environments - from creation, scheduling, running, to termination - and handles service exposure, and task cleanup. It's especially useful for organizations that need consistent, ephemeral Opsmate environments for LLM-powered operational tasks with isolated resources.
 
-## Getting Started
+## Install using Helm
 
-### Prerequisites
+The project is distributed as a Helm chart, which is automatically published to GitHub Container Registry on each push to main branch.
 
-- go version v1.22.0+
-- docker version 17.03+.
-- kubectl version v1.11.3+.
-- Access to a Kubernetes v1.11.3+ cluster.
-
-### To Deploy on the cluster
-
-**Build and push your image to GitHub Container Registry:**
+To install using Helm:
 
 ```sh
-make docker-build docker-push
+helm repo add opsmate-operator https://ghcr.io/opsmate-ai/opsmate-operator
+helm repo update
+helm install opsmate-operator opsmate-operator/opsmate-operator
 ```
 
-**NOTE:** The image is published to GitHub Container Registry (ghcr.io) by default.
-The current image is available at `ghcr.io/opsmate-ai/opsmate-controller-manager:0.1.4.alpha2`.
-If you're pushing to your own registry, set the `IMG` variable to your desired location.
-Make sure you have the proper permissions to the registry if the above commands don't work.
+## Up and Running
 
-**Install the CRDs into the cluster:**
-
-```sh
-make install
-```
-
-**Deploy the Manager to the cluster with the image specified by `IMG`:**
-
-```sh
-make deploy
-```
-
-> **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin
-privileges or be logged in as admin.
-
-**Create instances of your solution**
-You can apply the samples (examples) from the config/sample:
-
-```sh
-kubectl apply -k config/samples/
-```
-
->**NOTE**: Ensure that the samples has default values to test it out.
-
-### To Uninstall
-**Delete the instances (CRs) from the cluster:**
-
-```sh
-kubectl delete -k config/samples/
-```
-
-**Delete the APIs(CRDs) from the cluster:**
-
-```sh
-make uninstall
-```
-
-**UnDeploy the controller from the cluster:**
-
-```sh
-make undeploy
-```
-
-## Project Distribution
-
-Following are the steps to build the installer and distribute this project to users.
-
-1. Build the installer for the image built and published in the registry:
-
-```sh
-make build-installer IMG=ghcr.io/opsmate-ai/opsmate-controller-manager:0.1.4.alpha2
-```
-
-NOTE: The makefile target mentioned above generates an 'install.yaml'
-file in the dist directory. This file contains all the resources built
-with Kustomize, which are necessary to install this project without
-its dependencies.
-
-2. Using the installer
-
-Users can just run kubectl apply -f <URL for YAML BUNDLE> to install the project, i.e.:
-
-```sh
-kubectl apply -f https://raw.githubusercontent.com/opsmate-ai/opsmate-operator/main/dist/install.yaml
-```
+Checkout the [Opsmate Production Guide](https://docs.tryopsmate.ai/production/#environment-build) to find out to have on-demand Opsmate environments running in your Kubernetes cluster.
 
 ## Contributing
 Contributions to opsmate-operator are welcome! Here's how you can contribute:
