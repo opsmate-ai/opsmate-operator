@@ -12,8 +12,8 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/jingkaihe/opsmate-operator/pkg/api/v1alpha1"
-	"github.com/jingkaihe/opsmate-operator/pkg/logger"
+	"github.com/opsmate-ai/opsmate-operator/pkg/api/v1alpha1"
+	"github.com/opsmate-ai/opsmate-operator/pkg/logger"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )

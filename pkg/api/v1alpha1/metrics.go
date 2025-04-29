@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/jingkaihe/opsmate-operator/pkg/logger"
+	"github.com/opsmate-ai/opsmate-operator/pkg/logger"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"

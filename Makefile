@@ -7,7 +7,7 @@ IMG_TAG ?= $(shell cat VERSION.txt)
 CHART_NAME ?= opsmate-operator
 # VERSION without the patch version
 CHART_VERSION = $(shell cat VERSION.txt | awk -F'.' '{print $$1"."$$2"."$$3}')
-CHART_REPO ?= oci://ghcr.io/jingkaihe/opsmate-operator
+CHART_REPO ?= oci://ghcr.io/opsmate-ai/opsmate-operator
 # Image URL to use all building/pushing image targets
 IMG ?= $(IMG_NAME):$(IMG_TAG)
 

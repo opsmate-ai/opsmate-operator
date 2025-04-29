@@ -1,4 +1,4 @@
-module github.com/jingkaihe/opsmate-operator
+module github.com/opsmate-ai/opsmate-operator
 
 go 1.22.0
 

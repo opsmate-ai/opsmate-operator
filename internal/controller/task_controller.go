@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/google/uuid"
-	srev1alpha1 "github.com/jingkaihe/opsmate-operator/api/v1alpha1"
+	srev1alpha1 "github.com/opsmate-ai/opsmate-operator/api/v1alpha1"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"

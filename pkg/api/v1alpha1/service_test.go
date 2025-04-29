@@ -9,9 +9,9 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	srev1alpha1 "github.com/jingkaihe/opsmate-operator/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	srev1alpha1 "github.com/opsmate-ai/opsmate-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"

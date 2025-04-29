@@ -6,7 +6,7 @@ domain: opsmate.io
 layout:
 - go.kubebuilder.io/v4
 projectName: opsmate-operator
-repo: github.com/jingkaihe/opsmate-operator
+repo: github.com/opsmate-ai/opsmate-operator
 resources:
 - api:
     crdVersion: v1
@@ -15,7 +15,7 @@ resources:
   domain: opsmate.io
   group: sre
   kind: EnvironmentBuild
-  path: github.com/jingkaihe/opsmate-operator/api/v1alpha1
+  path: github.com/opsmate-ai/opsmate-operator/api/v1alpha1
   version: v1alpha1
 - api:
     crdVersion: v1
@@ -24,6 +24,6 @@ resources:
   domain: opsmate.io
   group: sre
   kind: Task
-  path: github.com/jingkaihe/opsmate-operator/api/v1alpha1
+  path: github.com/opsmate-ai/opsmate-operator/api/v1alpha1
   version: v1alpha1
 version: "3"

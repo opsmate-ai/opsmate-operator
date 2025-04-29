@@ -18,7 +18,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	srev1alpha1 "github.com/jingkaihe/opsmate-operator/api/v1alpha1"
+	srev1alpha1 "github.com/opsmate-ai/opsmate-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	// +kubebuilder:scaffold:imports
 )
