@@ -17,9 +17,7 @@ The project is distributed as a Helm chart, which is automatically published to 
 To install using Helm:
 
 ```sh
-helm repo add opsmate-operator https://ghcr.io/opsmate-ai/opsmate-operator
-helm repo update
-helm install opsmate-operator opsmate-operator/opsmate-operator
+helm install opsmate-operator oci://ghcr.io/opsmate-ai/opsmate-operator/opsmate-operator --version 0.2.0
 ```
 
 ## Up and Running
