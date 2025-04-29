@@ -20,7 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	srev1alpha1 "github.com/jingkaihe/opsmate-operator/api/v1alpha1"
+	srev1alpha1 "github.com/opsmate-ai/opsmate-operator/api/v1alpha1"
 )
 
 var _ = Describe("Task Controller", func() {

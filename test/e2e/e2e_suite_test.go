@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/jingkaihe/opsmate-operator/test/utils"
+	"github.com/opsmate-ai/opsmate-operator/test/utils"
 )
 
 var (
@@ -27,7 +27,7 @@ var (
 
 	// projectImage is the name of the image which will be build and loaded
 	// with the code source changes to be tested.
-	projectImage = "example.com/opsmate-operator:v0.0.1"
+	projectImage = "ghcr.io/opsmate-ai/opsmate-controller-manager:v0.0.1"
 )
 
 // TestE2E runs the end-to-end (e2e) test suite for the project. These tests execute in an isolated,

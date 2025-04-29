@@ -2,12 +2,12 @@
 ENVTEST_K8S_VERSION = 1.31.0
 KIND_VERSION ?= v0.25.0
 SWAG ?= $(LOCALBIN)/swag
-IMG_NAME ?= ghcr.io/jingkaihe/opsmate-controller-manager
+IMG_NAME ?= ghcr.io/opsmate-ai/opsmate-controller-manager
 IMG_TAG ?= $(shell cat VERSION.txt)
 CHART_NAME ?= opsmate-operator
 # VERSION without the patch version
 CHART_VERSION = $(shell cat VERSION.txt | awk -F'.' '{print $$1"."$$2"."$$3}')
-CHART_REPO ?= oci://ghcr.io/jingkaihe/opsmate-operator
+CHART_REPO ?= oci://ghcr.io/opsmate-ai/opsmate-operator
 # Image URL to use all building/pushing image targets
 IMG ?= $(IMG_NAME):$(IMG_TAG)
 
@@ -277,7 +277,8 @@ $(HELM): $(LOCALBIN)
 helm-gen: manifests kustomize helmify
 	$(KUSTOMIZE) build config/default | $(HELMIFY) -image-pull-secrets -crd-dir ./charts/$(CHART_NAME) && \
 	sed -i 's/version: .*/version: $(CHART_VERSION)/' ./charts/$(CHART_NAME)/Chart.yaml && \
-	sed -i 's/appVersion: .*/appVersion: "$(IMG_TAG)"/' ./charts/$(CHART_NAME)/Chart.yaml
+	sed -i 's/appVersion: .*/appVersion: "$(IMG_TAG)"/' ./charts/$(CHART_NAME)/Chart.yaml && \
+	sed -i 's/tag: .*/tag: $(IMG_TAG)/' ./charts/$(CHART_NAME)/values.yaml
 
 .PHONY: helm-lint
 helm-lint: helm

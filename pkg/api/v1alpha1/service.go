@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	srev1alpha1 "github.com/jingkaihe/opsmate-operator/api/v1alpha1"
-	"github.com/jingkaihe/opsmate-operator/pkg/logger"
+	srev1alpha1 "github.com/opsmate-ai/opsmate-operator/api/v1alpha1"
+	"github.com/opsmate-ai/opsmate-operator/pkg/logger"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"

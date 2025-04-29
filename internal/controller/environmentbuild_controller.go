@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	srev1alpha1 "github.com/jingkaihe/opsmate-operator/api/v1alpha1"
+	srev1alpha1 "github.com/opsmate-ai/opsmate-operator/api/v1alpha1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
