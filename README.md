@@ -26,7 +26,7 @@ make docker-build docker-push
 ```
 
 **NOTE:** The image is published to GitHub Container Registry (ghcr.io) by default.
-The current image is available at `ghcr.io/jingkaihe/opsmate-controller-manager:0.1.4.alpha2`.
+The current image is available at `ghcr.io/opsmate-ai/opsmate-controller-manager:0.1.4.alpha2`.
 If you're pushing to your own registry, set the `IMG` variable to your desired location.
 Make sure you have the proper permissions to the registry if the above commands don't work.
 
@@ -80,7 +80,7 @@ Following are the steps to build the installer and distribute this project to us
 1. Build the installer for the image built and published in the registry:
 
 ```sh
-make build-installer IMG=ghcr.io/jingkaihe/opsmate-controller-manager:0.1.4.alpha2
+make build-installer IMG=ghcr.io/opsmate-ai/opsmate-controller-manager:0.1.4.alpha2
 ```
 
 NOTE: The makefile target mentioned above generates an 'install.yaml'
@@ -93,7 +93,7 @@ its dependencies.
 Users can just run kubectl apply -f <URL for YAML BUNDLE> to install the project, i.e.:
 
 ```sh
-kubectl apply -f https://raw.githubusercontent.com/jingkaihe/opsmate-operator/main/dist/install.yaml
+kubectl apply -f https://raw.githubusercontent.com/opsmate-ai/opsmate-operator/main/dist/install.yaml
 ```
 
 ## Contributing
